@@ -7,7 +7,7 @@ import pandas as pd
 
 from modules.market.krx_resolver import normalize_name
 from modules.market.master_cache import clear_master_memory_cache
-from modules.market.master_loader import load_master_database, rebuild_master_database, refresh_krx_master_cache
+from modules.market.master_loader import load_master_database
 
 RESULT_COLUMNS = ["ticker", "name", "english_name", "market", "asset_type", "score", "label"]
 
@@ -111,20 +111,33 @@ def search_master(query: str, limit: int = 30) -> pd.DataFrame:
 
 
 def refresh_krx_master_database() -> tuple[bool, str]:
-    """Refresh KRX stock master cache only."""
+    """Refresh KRX stock master cache only with Cloud-safe lazy imports."""
 
     try:
+        from modules.market.master_loader import refresh_krx_master_cache
+
         frame = refresh_krx_master_cache()
         clear_master_memory_cache()
         return True, f"KRX stock database updated. {len(frame)} rows cached."
     except Exception:
-        return False, "KRX database update failed. Existing cache will be used if available."
+        try:
+            from modules.market.master_cache import write_master_cache
+            from modules.market.master_loader import load_krx_master
+
+            frame = load_krx_master()
+            write_master_cache("krx_master", frame)
+            clear_master_memory_cache()
+            return True, f"KRX stock database updated. {len(frame)} rows cached."
+        except Exception:
+            return False, "KRX database update failed. Existing cache will be used if available."
 
 
 def refresh_master_database() -> tuple[bool, str]:
-    """Refresh master database cache and clear in-memory search caches."""
+    """Refresh master database cache and clear in-memory search caches with lazy imports."""
 
     try:
+        from modules.market.master_loader import rebuild_master_database
+
         data = rebuild_master_database()
         clear_master_memory_cache()
         total = sum(len(frame) for frame in data.values())
