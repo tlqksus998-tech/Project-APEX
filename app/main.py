@@ -16,6 +16,7 @@ from app.ui.help_text import render_terms_help
 from app.ui.onboarding import render_empty_state, render_onboarding
 from app.ui.portfolio_view import render_portfolio_errors, render_portfolio_input
 from app.ui.sidebar import render_cash_input, render_market_controls, render_sidebar, render_user_mode
+from app.ui.summary_view import render_portfolio_ai_summary
 from app.ui.today_dashboard import (
     build_dashboard_table,
     build_today_actions,
@@ -37,6 +38,7 @@ from modules.portfolio.input_data import get_sample_portfolio, validate_portfoli
 from modules.portfolio.session_state import get_portfolio_state, initialize_portfolio_state
 from modules.risk import evaluate_portfolio_risk
 from modules.screening import screen_today_candidates
+from modules.summary import generate_portfolio_summary
 
 
 K_PAGE_TITLE = "\uc624\ub298\uc758 \ud22c\uc790\ud310\ub2e8"
@@ -104,8 +106,10 @@ def main() -> None:
     actions = build_today_actions(positions, portfolio_risk, scores)
     dashboard_table = build_dashboard_table(positions, analysis_results, decision_results, portfolio_risk)
     candidates = screen_today_candidates(limit=8)
+    portfolio_summary = generate_portfolio_summary(metrics, positions, decision_results, portfolio_risk, cash_amount)
 
     render_decision_explanation_panel(scores, decision_results, analysis_results, portfolio_risk, beginner_mode=beginner_mode)
+    render_portfolio_ai_summary(portfolio_summary)
     render_score_cards(scores, beginner_mode=beginner_mode)
     render_action_card(actions)
     render_candidate_stocks(candidates)

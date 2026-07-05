@@ -7,6 +7,35 @@ Project APEX is a Streamlit-based investment decision dashboard for Korean and U
 
 
 
+
+## Sprint 4.0 - Portfolio AI Summary
+
+Project APEX now generates a portfolio-level AI-style summary without using any external AI API.
+
+The summary is rule-based and uses internal data only:
+
+- portfolio metrics
+- position concentration
+- cash ratio
+- decision results
+- risk results
+- final score distribution
+- BUY / REDUCE / SELL ratios
+- leverage and loss risk signals
+
+Displayed outputs:
+
+- Overall Decision
+- Overall Score
+- Risk Level
+- Summary Text
+- Key Strengths
+- Key Risks
+- Action Items
+- Confidence
+
+This feature is not an automated trading signal. It is a portfolio operation summary to help decide what to inspect first.
+
 ## MVP Sprint 3.9 - Portfolio JSON Download / Upload
 
 For Streamlit Cloud, direct server-side files may disappear when the container restarts. The recommended backup flow is JSON download/upload.
