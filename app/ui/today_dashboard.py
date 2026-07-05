@@ -5,11 +5,18 @@ import streamlit as st
 
 from app.ui.help_text import help_for
 from modules.decision.decision_engine import map_decision
+from modules.scoring.confidence import portfolio_confidence
+from modules.scoring.decision_reason import build_portfolio_reason_summary
+from modules.scoring.recommendation import build_recommendations
 from modules.utils import format_currency, format_percent
 
 
 K_TITLE = "\U0001f4c8 \uc624\ub298\uc758 \ud22c\uc790\ud310\ub2e8"
 K_ACTION_TITLE = "\uc624\ub298 \ud574\uc57c \ud560 \ud589\ub3d9"
+K_AI_DECISION = "AI \ud22c\uc790\ud310\ub2e8"
+K_CONFIDENCE = "\uc2e0\ub8b0\ub3c4"
+K_REASONS = "\ud310\ub2e8 \uadfc\uac70"
+K_RECOMMENDATIONS = "\ucd94\ucc9c \ud589\ub3d9"
 K_TABLE_TITLE = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ud14c\uc774\ube14"
 K_NO_TABLE = "\uc544\uc9c1 \ud3ec\ud2b8\ud3f4\ub9ac\uc624\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. \uc885\ubaa9\uc744 \uac80\uc0c9\ud574 \ucd94\uac00\ud574\ubcf4\uc138\uc694."
 K_NAME = "\uc885\ubaa9\uba85"
@@ -33,9 +40,17 @@ DECISION_DESCRIPTIONS = {
 DECISION_COLORS = {
     "STRONG_BUY": "background-color: #dcfce7; color: #166534; font-weight: 700;",
     "BUY": "background-color: #dcfce7; color: #166534; font-weight: 700;",
-    "HOLD": "background-color: #dbeafe; color: #1e40af; font-weight: 700;",
+    "HOLD": "background-color: #fef3c7; color: #92400e; font-weight: 700;",
     "REDUCE": "background-color: #ffedd5; color: #9a3412; font-weight: 700;",
     "SELL": "background-color: #fee2e2; color: #991b1b; font-weight: 700;",
+}
+
+DECISION_CARD_STYLES = {
+    "STRONG_BUY": ("#dcfce7", "#166534"),
+    "BUY": ("#dcfce7", "#166534"),
+    "HOLD": ("#fef3c7", "#92400e"),
+    "REDUCE": ("#ffedd5", "#9a3412"),
+    "SELL": ("#fee2e2", "#991b1b"),
 }
 
 
@@ -63,7 +78,7 @@ def compute_dashboard_scores(decision_results: pd.DataFrame, portfolio_risk: pd.
 
 
 def render_score_cards(scores: dict[str, float | str], beginner_mode: bool = True) -> None:
-    """Render top score cards and the large decision card."""
+    """Render portfolio score cards."""
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Portfolio Score", f"{float(scores['portfolio_score']):.1f}", help=help_for("Portfolio Score"))
@@ -71,21 +86,45 @@ def render_score_cards(scores: dict[str, float | str], beginner_mode: bool = Tru
     col3.metric("Risk Score", f"{float(scores['risk_score']):.1f}", help=help_for("Risk Score"))
     col4.metric("Final Score", f"{float(scores['final_score']):.1f}", help=help_for("Final Score"))
 
-    decision = str(scores["decision"])
-    description = DECISION_DESCRIPTIONS.get(decision, DECISION_DESCRIPTIONS["HOLD"])
-    st.markdown(
-        f"""
-        <div style="padding: 22px; border-radius: 12px; border: 1px solid #e5e7eb; text-align: center; margin: 10px 0 18px 0;">
-            <div style="font-size: 14px; color: #6b7280;">Decision</div>
-            <div style="font-size: 52px; font-weight: 800; letter-spacing: 0;">{decision}</div>
-            <div style="font-size: 16px; color: #374151; margin-top: 8px;">{description}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if beginner_mode:
-        st.caption("Decision\uc740 \ub9e4\uc218/\ub9e4\ub3c4 \uc9c0\uc2dc\uac00 \uc544\ub2c8\ub77c \ud604\uc7ac \uc0c1\ud0dc\uc5d0\uc11c \uc5b4\ub5a4 \ud589\ub3d9\uc744 \uba3c\uc800 \uac80\ud1a0\ud560\uc9c0 \ub3d5\ub294 \ucd08\uc548\uc785\ub2c8\ub2e4.")
 
+def render_decision_explanation_panel(scores: dict[str, float | str], decision_results: pd.DataFrame, analysis_results: pd.DataFrame, portfolio_risk: pd.DataFrame, beginner_mode: bool = True) -> None:
+    """Render explainable portfolio-level decision panel."""
+
+    decision = str(scores.get("decision", "HOLD"))
+    confidence = portfolio_confidence(decision_results)
+    reasons = build_portfolio_reason_summary(analysis_results, portfolio_risk, limit=5)
+    recommendations = build_recommendations(decision)
+    bg_color, text_color = DECISION_CARD_STYLES.get(decision, DECISION_CARD_STYLES["HOLD"])
+    description = DECISION_DESCRIPTIONS.get(decision, DECISION_DESCRIPTIONS["HOLD"])
+
+    with st.container(border=True):
+        st.markdown(f"### {K_AI_DECISION}")
+        st.markdown(
+            f"""
+            <div style="background:{bg_color}; color:{text_color}; padding: 18px; border-radius: 10px; margin-bottom: 14px;">
+                <div style="font-size: 42px; font-weight: 800; letter-spacing: 0;">{decision}</div>
+                <div style="font-size: 16px; margin-top: 4px;">{K_CONFIDENCE} : {confidence:.0f}%</div>
+                <div style="font-size: 15px; margin-top: 10px; color:#374151;">{description}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        col_reason, col_action = st.columns(2)
+        with col_reason:
+            st.markdown(f"**{K_REASONS}**")
+            if reasons:
+                for reason in reasons:
+                    st.write(reason)
+            else:
+                st.write("\u26a0 \ud310\ub2e8\uc5d0 \ud544\uc694\ud55c \ub370\uc774\ud130\uac00 \ubd80\uc871\ud569\ub2c8\ub2e4.")
+        with col_action:
+            st.markdown(f"**{K_RECOMMENDATIONS}**")
+            for recommendation in recommendations:
+                st.write(recommendation)
+
+    if beginner_mode:
+        st.caption("\uc2e0\ub8b0\ub3c4\ub294 \uc9c0\ud45c\uac00 \ucda9\ubd84\ud788 \uc788\ub294\uc9c0\ub97c \ubcf4\ub294 \uac12\uc774\uba70, \uc218\uc775\uc744 \ubcf4\uc7a5\ud558\ub294 \uac12\uc740 \uc544\ub2d9\ub2c8\ub2e4.")
 
 def build_today_actions(positions: pd.DataFrame, portfolio_risk: pd.DataFrame, scores: dict[str, float | str]) -> list[str]:
     """Build rule-based action items for today."""

@@ -14,6 +14,8 @@ from modules.analysis.analysis_engine import (
     VOLUME_UP,
 )
 from modules.decision.decision_models import DecisionCode, DecisionResult
+from modules.scoring.confidence import calculate_confidence_score
+from modules.scoring.decision_reason import build_decision_reasons
 
 
 def decide_one(analysis: dict[str, object], risk: dict[str, object] | None = None) -> DecisionResult:
@@ -31,12 +33,13 @@ def decide_one(analysis: dict[str, object], risk: dict[str, object] | None = Non
     week52_score, week52_reason = score_week52(as_optional_float(analysis.get("week52_position")))
 
     score += rsi_score + trend_score + macd_score + volume_score + week52_score
+    reasons.extend(build_decision_reasons(analysis, risk))
     reasons.extend([rsi_reason, trend_reason, macd_reason, volume_reason, week52_reason])
 
     decision_score = clamp(score, 0.0, 100.0)
     risk_penalty = min(as_optional_float(risk.get("total_risk_penalty")) or 0.0, 0.0)
     final_score = clamp(decision_score + risk_penalty, 0.0, 100.0)
-    confidence_score = calculate_confidence(analysis)
+    confidence_score = calculate_confidence_score(analysis)
     decision = map_decision(final_score)
     risk_messages = risk.get("risk_messages") if isinstance(risk.get("risk_messages"), list) else []
     return DecisionResult(ticker, decision, decision_score, risk_penalty, final_score, confidence_score, reasons, risk_messages)
@@ -142,18 +145,7 @@ def score_week52(position: float | None) -> tuple[float, str]:
 def calculate_confidence(analysis: dict[str, object]) -> float:
     """Calculate confidence score based on available analysis fields."""
 
-    confidence = 0.0
-    if as_optional_float(analysis.get("rsi_14")) is not None:
-        confidence += 20.0
-    if str(analysis.get("trend_status") or STATUS_INSUFFICIENT) != STATUS_INSUFFICIENT:
-        confidence += 20.0
-    if as_optional_float(analysis.get("macd")) is not None and str(analysis.get("macd_status") or STATUS_INSUFFICIENT) != STATUS_INSUFFICIENT:
-        confidence += 20.0
-    if as_optional_float(analysis.get("volume_ratio")) is not None and str(analysis.get("volume_status") or STATUS_INSUFFICIENT) != STATUS_INSUFFICIENT:
-        confidence += 20.0
-    if as_optional_float(analysis.get("week52_position")) is not None:
-        confidence += 20.0
-    return clamp(confidence, 0.0, 100.0)
+    return calculate_confidence_score(analysis)
 
 
 def map_decision(decision_score: float) -> DecisionCode:

@@ -7,7 +7,7 @@ import pandas as pd
 
 from modules.market.krx_resolver import normalize_name
 from modules.market.master_cache import clear_master_memory_cache
-from modules.market.master_loader import load_master_database, rebuild_master_database
+from modules.market.master_loader import load_master_database, rebuild_master_database, refresh_krx_master_cache
 
 RESULT_COLUMNS = ["ticker", "name", "english_name", "market", "asset_type", "score", "label"]
 
@@ -27,7 +27,11 @@ def prepare_search_frame() -> pd.DataFrame:
     frame["_ticker_norm"] = frame["ticker"].map(normalize_search_text)
     frame["_name_norm"] = frame["name"].map(normalize_search_text)
     frame["_english_norm"] = frame["english_name"].map(normalize_search_text)
-    frame["_search_blob"] = frame["_ticker_norm"] + " " + frame["_name_norm"] + " " + frame["_english_norm"]
+    if "search_text" in frame.columns:
+        frame["_cached_search_norm"] = frame["search_text"].map(normalize_search_text)
+    else:
+        frame["_cached_search_norm"] = ""
+    frame["_search_blob"] = frame["_ticker_norm"] + " " + frame["_name_norm"] + " " + frame["_english_norm"] + " " + frame["_cached_search_norm"]
     return frame
 
 
@@ -98,6 +102,23 @@ def search_as_dataframe(query: str, limit: int = 30) -> pd.DataFrame:
 
     rows = search_instruments(query, limit)
     return pd.DataFrame(rows, columns=RESULT_COLUMNS)
+
+
+def search_master(query: str, limit: int = 30) -> pd.DataFrame:
+    """Search the master database with the Sprint 3.7 public API name."""
+
+    return search_as_dataframe(query, limit)
+
+
+def refresh_krx_master_database() -> tuple[bool, str]:
+    """Refresh KRX stock master cache only."""
+
+    try:
+        frame = refresh_krx_master_cache()
+        clear_master_memory_cache()
+        return True, f"KRX stock database updated. {len(frame)} rows cached."
+    except Exception:
+        return False, "KRX database update failed. Existing cache will be used if available."
 
 
 def refresh_master_database() -> tuple[bool, str]:

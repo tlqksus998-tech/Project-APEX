@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import pandas as pd
 import streamlit as st
 
+from app.ui.candidate_view import render_candidate_stocks
 from app.ui.help_text import render_terms_help
 from app.ui.onboarding import render_empty_state, render_onboarding
 from app.ui.portfolio_view import render_portfolio_errors, render_portfolio_input
@@ -21,6 +22,7 @@ from app.ui.today_dashboard import (
     compute_dashboard_scores,
     render_action_card,
     render_dashboard_table,
+    render_decision_explanation_panel,
     render_portfolio_summary,
     render_risk_alerts,
     render_score_cards,
@@ -34,6 +36,7 @@ from modules.portfolio.calculator import calculate_portfolio_summary
 from modules.portfolio.input_data import get_sample_portfolio, validate_portfolio
 from modules.portfolio.session_state import get_portfolio_state, initialize_portfolio_state
 from modules.risk import evaluate_portfolio_risk
+from modules.screening import screen_today_candidates
 
 
 K_PAGE_TITLE = "\uc624\ub298\uc758 \ud22c\uc790\ud310\ub2e8"
@@ -100,9 +103,12 @@ def main() -> None:
     scores = compute_dashboard_scores(decision_results, portfolio_risk)
     actions = build_today_actions(positions, portfolio_risk, scores)
     dashboard_table = build_dashboard_table(positions, analysis_results, decision_results, portfolio_risk)
+    candidates = screen_today_candidates(limit=8)
 
+    render_decision_explanation_panel(scores, decision_results, analysis_results, portfolio_risk, beginner_mode=beginner_mode)
     render_score_cards(scores, beginner_mode=beginner_mode)
     render_action_card(actions)
+    render_candidate_stocks(candidates)
     render_risk_alerts(portfolio_risk)
     render_portfolio_summary(positions, metrics, cash_amount)
     render_dashboard_table(dashboard_table, beginner_mode=beginner_mode)

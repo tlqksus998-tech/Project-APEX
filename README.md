@@ -3,6 +3,75 @@
 Project APEX is a Streamlit-based investment decision dashboard for Korean and US investors.
 
 
+
+
+## MVP Sprint 3.7 - KOSPI Full Search + Today Candidate Stocks
+
+Project APEX now strengthens KRX/KOSPI search and adds a Today Candidate Stocks section.
+
+KRX master functions:
+
+- `load_kospi_master()`
+- `load_kosdaq_master()`
+- `load_krx_master()`
+- `refresh_krx_master_cache()`
+- `search_master(query)`
+
+KRX cache:
+
+- `data/market/krx_master.parquet`
+- required columns: `name`, `ticker`, `market`, `asset_type`, `search_text`
+
+Required KOSPI names are included in fallback data so search still works when internet refresh fails:
+
+- ????
+- ????
+- SK????
+- SK???
+- ???
+- NAVER
+- ???
+- POSCO???
+- LG??????
+
+Sidebar update:
+
+- `KRX ?? DB ????` refreshes KOSPI/KOSDAQ/KONEX and ETF cache.
+
+Today Candidate Stocks:
+
+- Shows candidate stocks as watchlist ideas, not automatic buy recommendations.
+- Displays name, ticker, final score, decision, and key reasons.
+- Users should still check portfolio weight and risk before buying.
+
+## MVP Sprint 3.6 - Explainable Decision Engine
+
+Project APEX now shows why the current portfolio decision was made.
+
+Decision Explanation Panel:
+
+- AI investment decision: BUY, HOLD, REDUCE, SELL
+- AI Confidence: 0-100% based on available analysis fields
+- Decision reasons: RSI, MACD, volume, trend, and portfolio risk
+- Recommended actions: new buy, hold, and additional-buy guidance
+
+Confidence calculation:
+
+- RSI available: +20
+- Trend available: +20
+- MACD available: +20
+- Volume available: +20
+- 52-week position available: +20
+
+The score is a data-sufficiency confidence score. It is not a profit probability.
+
+Decision colors:
+
+- BUY / STRONG_BUY: green
+- HOLD: yellow
+- REDUCE: orange
+- SELL: red
+
 ## MVP Sprint 3.5 - Master Search Engine
 
 Project APEX now uses a Master Search Engine for one search box across Korean and US markets.

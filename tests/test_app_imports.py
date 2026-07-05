@@ -1,5 +1,6 @@
 def test_ui_modules_importable():
     import app.ui.analysis_view
+    import app.ui.candidate_view
     import app.ui.decision_view
     import app.ui.layout
     import app.ui.market_view

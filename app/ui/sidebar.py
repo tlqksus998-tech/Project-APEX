@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import streamlit as st
 
-from modules.market.master_search import refresh_master_database
+from modules.market.master_search import refresh_krx_master_database, refresh_master_database
 
 
 MENU_ITEMS = ["Home", "Portfolio", "Market", "Analysis", "Decision", "Settings"]
 K_BEGINNER = "\ucd08\ubcf4\uc790 \ubaa8\ub4dc"
 K_ADVANCED = "\uace0\uae09\uc790 \ubaa8\ub4dc"
 K_REFRESH = "\uc2dc\uc7a5 \ub370\uc774\ud130 \uac31\uc2e0"
+K_KRX_REFRESH = "KRX \uc885\ubaa9 DB \uc0c8\ub85c\uace0\uce68"
 
 
 def render_sidebar() -> str:
@@ -29,6 +30,13 @@ def render_user_mode() -> str:
 def render_market_refresh() -> None:
     """Render master market data refresh button."""
 
+    if st.sidebar.button(K_KRX_REFRESH, width="stretch"):
+        with st.sidebar.spinner("Updating KRX data..."):
+            success, message = refresh_krx_master_database()
+        if success:
+            st.sidebar.success(message)
+        else:
+            st.sidebar.warning(message)
     if st.sidebar.button(K_REFRESH, width="stretch"):
         with st.sidebar.spinner("Updating market data..."):
             success, message = refresh_master_database()

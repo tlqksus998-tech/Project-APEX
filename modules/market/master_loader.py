@@ -6,7 +6,7 @@ from io import StringIO
 import pandas as pd
 import requests
 
-from modules.market.krx_resolver import ETF_BRANDS, FALLBACK_KRX_NAME_TO_TICKER, get_krx_listing
+from modules.market.krx_resolver import ETF_BRANDS, FALLBACK_KRX_NAME_TO_TICKER, get_krx_listing, normalize_name
 from modules.market.master_cache import cache_exists, read_master_cache, write_master_cache
 
 try:
@@ -14,9 +14,11 @@ try:
 except Exception:  # pragma: no cover - optional dependency fallback
     stock = None
 
-COLUMNS = ["ticker", "name", "english_name", "market", "asset_type", "source"]
+COLUMNS = ["ticker", "name", "english_name", "market", "asset_type", "source", "search_text"]
 
 FALLBACK_KRX_EXTRA = {
+    "\uc0bc\uc131\uc804\uae30": "009150",
+    "SK\uc2a4\ud018\uc5b4": "402340",
     "\uc0bc\uc131\ubb3c\uc0b0": "028260",
     "\ud604\ub300\ubaa8\ube44\uc2a4": "012330",
     "LG\ud654\ud559": "051910",
@@ -61,9 +63,62 @@ def normalize_master_frame(data: pd.DataFrame) -> pd.DataFrame:
     for column in COLUMNS:
         frame[column] = frame[column].fillna("").astype(str).str.strip()
     frame["ticker"] = frame["ticker"].str.upper()
+    frame["search_text"] = frame.apply(build_search_text, axis=1)
     frame = frame[frame["ticker"] != ""]
     return frame.drop_duplicates(subset=["ticker", "market"], keep="last").reset_index(drop=True)
 
+
+
+def build_search_text(row: pd.Series) -> str:
+    """Build space-insensitive searchable text for one instrument."""
+
+    values = [row.get("ticker", ""), row.get("name", ""), row.get("english_name", "")]
+    return " ".join(normalize_name(str(value)) for value in values if str(value or "").strip())
+
+
+def load_kospi_master() -> pd.DataFrame:
+    """Load KOSPI stock master data from pykrx with safe fallback rows."""
+
+    return load_krx_market_master("KOSPI")
+
+
+def load_kosdaq_master() -> pd.DataFrame:
+    """Load KOSDAQ stock master data from pykrx with safe fallback rows."""
+
+    return load_krx_market_master("KOSDAQ")
+
+
+def load_krx_market_master(market: str) -> pd.DataFrame:
+    """Load one KRX market from pykrx."""
+
+    rows: list[dict[str, str]] = []
+    if stock is not None:
+        try:
+            for ticker in stock.get_market_ticker_list(market=market):
+                name = stock.get_market_ticker_name(ticker)
+                if name:
+                    rows.append({"ticker": str(ticker).zfill(6), "name": str(name), "english_name": "", "market": market, "asset_type": "Stock", "source": "pykrx"})
+        except Exception:
+            rows = []
+    return normalize_master_frame(pd.DataFrame(rows))
+
+
+def load_krx_master() -> pd.DataFrame:
+    """Load KOSPI, KOSDAQ, KONEX, ETF, and fallback KRX rows."""
+
+    frames = [load_kospi_master(), load_kosdaq_master(), load_krx_market_master("KONEX")]
+    frames.append(load_krx_master_from_source())
+    frames.append(load_krx_etf_from_source())
+    return normalize_master_frame(pd.concat(frames, ignore_index=True))
+
+
+def refresh_krx_master_cache() -> pd.DataFrame:
+    """Refresh only the KRX master cache file."""
+
+    frame = load_krx_master()
+    write_master_cache("krx_master", frame)
+    load_master_database.cache_clear()
+    return frame
 
 def load_krx_master_from_source() -> pd.DataFrame:
     """Load KRX KOSPI/KOSDAQ/KONEX stock master data with fallback rows."""
@@ -137,7 +192,7 @@ def rebuild_master_database() -> dict[str, pd.DataFrame]:
     """Refresh all master datasets and write them to cache."""
 
     data = {
-        "krx_master": load_krx_master_from_source(),
+        "krx_master": load_krx_master(),
         "krx_etf": load_krx_etf_from_source(),
         "us_master": load_us_master_from_source(),
     }
@@ -160,6 +215,7 @@ def load_master_database() -> pd.DataFrame:
     frames = [read_master_cache("krx_master"), read_master_cache("krx_etf"), read_master_cache("us_master")]
     if all(frame.empty for frame in frames):
         frames = [load_krx_master_from_source(), load_krx_etf_from_source(), normalize_master_frame(pd.DataFrame(FALLBACK_US))]
+    fallback_krx = load_krx_master_from_source()
     fallback_us = normalize_master_frame(pd.DataFrame(FALLBACK_US))
-    combined = normalize_master_frame(pd.concat([*frames, fallback_us], ignore_index=True))
+    combined = normalize_master_frame(pd.concat([*frames, fallback_krx, fallback_us], ignore_index=True))
     return combined

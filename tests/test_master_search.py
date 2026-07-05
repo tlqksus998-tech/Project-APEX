@@ -54,3 +54,32 @@ def test_search_latency_after_warmup_under_target():
     elapsed = measure_search_latency("\uc0bc\uc131")
 
     assert elapsed < 0.2
+
+
+SAMSUNG_ELECTRO = "\uc0bc\uc131\uc804\uae30"
+SK_SQUARE = "SK\uc2a4\ud018\uc5b4"
+
+
+def test_kospi_required_names_are_searchable():
+    samsung_electro = search_as_dataframe(SAMSUNG_ELECTRO, limit=10)
+    sk_square = search_as_dataframe(SK_SQUARE, limit=10)
+    samsung = search_as_dataframe("\uc0bc\uc131", limit=30)
+
+    assert "009150" in samsung_electro["ticker"].tolist()
+    assert "402340" in sk_square["ticker"].tolist()
+    assert "005930" in samsung["ticker"].tolist()
+    assert "009150" in samsung["ticker"].tolist()
+
+
+def test_kospi_ticker_search_and_cache_columns():
+    from modules.market.master_cache import read_master_cache
+    from modules.market.master_loader import refresh_krx_master_cache
+    from modules.market.master_search import search_master
+
+    refreshed = refresh_krx_master_cache()
+    cached = read_master_cache("krx_master")
+    ticker_result = search_master("009150", limit=5)
+
+    assert not refreshed.empty
+    assert {"name", "ticker", "market", "asset_type", "search_text"}.issubset(cached.columns)
+    assert "009150" in ticker_result["ticker"].tolist()
