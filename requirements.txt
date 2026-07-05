@@ -1,0 +1,8 @@
+streamlit
+pandas
+yfinance
+requests
+pytest
+pykrx
+openpyxl
+pyarrow
