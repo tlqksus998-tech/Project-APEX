@@ -6,6 +6,25 @@ Project APEX is a Streamlit-based investment decision dashboard for Korean and U
 
 
 
+
+## MVP Sprint 3.9 - Portfolio JSON Download / Upload
+
+For Streamlit Cloud, direct server-side files may disappear when the container restarts. The recommended backup flow is JSON download/upload.
+
+Portable portfolio controls:
+
+- JSON download: saves the current portfolio as `project_apex_portfolio.json`.
+- JSON upload: loads a previously downloaded `.json` file into the current session.
+- Local save/load/reset controls remain available for local development.
+
+Required JSON schema:
+
+- `schema_version`
+- `holdings`
+- each holding requires `name`, `ticker`, `quantity`, `avg_price`
+
+If the uploaded file is invalid, the app shows a friendly message and keeps running.
+
 ## MVP Sprint 3.8 - Portfolio Save & Load
 
 Project APEX can save and reload the current portfolio as JSON.

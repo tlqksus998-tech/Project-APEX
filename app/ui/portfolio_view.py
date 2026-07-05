@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from modules.market.master_search import search_as_dataframe
-from modules.portfolio.storage import delete_saved_portfolio, load_portfolio_json, save_portfolio_json
+from modules.portfolio.storage import delete_saved_portfolio, load_portfolio_json, load_portfolio_json_bytes, portfolio_to_json_bytes, save_portfolio_json
 from modules.portfolio.session_state import (
     add_holding,
     get_portfolio_state,
@@ -49,6 +49,8 @@ K_LOAD_SAMPLE = "\uc0d8\ud50c \ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ubd88\ub7ec\uc624\
 K_SAVE = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \uc800\uc7a5"
 K_LOAD = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ubd88\ub7ec\uc624\uae30"
 K_RESET = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ucd08\uae30\ud654"
+K_DOWNLOAD = "JSON \ub2e4\uc6b4\ub85c\ub4dc"
+K_UPLOAD = "JSON \uc5c5\ub85c\ub4dc"
 
 
 def build_search_results(query: str) -> list[SearchResult]:
@@ -67,15 +69,16 @@ def build_search_results(query: str) -> list[SearchResult]:
 
 
 def render_portfolio_storage_controls() -> None:
-    """Render portfolio save/load/reset controls."""
+    """Render portfolio save/load/reset and portable JSON controls."""
 
     notice = st.session_state.pop("portfolio_storage_notice", None)
     if notice:
         st.info(str(notice))
 
+    current_portfolio = get_portfolio_state()
     col_save, col_load, col_reset = st.columns(3)
     if col_save.button(K_SAVE, width="stretch", key="portfolio_save_button"):
-        success, message = save_portfolio_json(get_portfolio_state())
+        success, message = save_portfolio_json(current_portfolio)
         if success:
             st.success(message)
         else:
@@ -93,6 +96,32 @@ def render_portfolio_storage_controls() -> None:
         delete_saved_portfolio()
         st.session_state["portfolio_flash"] = "Portfolio reset."
         st.rerun()
+
+    json_bytes, download_error = portfolio_to_json_bytes(current_portfolio)
+    col_download, col_upload = st.columns(2)
+    if json_bytes is None:
+        col_download.button(K_DOWNLOAD, width="stretch", disabled=True, key="portfolio_download_disabled")
+        if download_error:
+            col_download.caption(download_error)
+    else:
+        col_download.download_button(
+            K_DOWNLOAD,
+            data=json_bytes,
+            file_name="project_apex_portfolio.json",
+            mime="application/json",
+            width="stretch",
+            key="portfolio_download_button",
+        )
+
+    uploaded = col_upload.file_uploader(K_UPLOAD, type=["json"], key="portfolio_upload_json")
+    if uploaded is not None:
+        loaded, error = load_portfolio_json_bytes(uploaded.getvalue())
+        if error:
+            st.warning(error)
+        else:
+            set_portfolio_state(loaded)
+            st.session_state["portfolio_flash"] = "Portfolio uploaded."
+            st.rerun()
 
 
 def render_portfolio_input(sample_df: pd.DataFrame) -> pd.DataFrame:
