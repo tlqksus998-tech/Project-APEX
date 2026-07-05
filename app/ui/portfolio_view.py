@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from modules.market.master_search import search_as_dataframe
+from modules.portfolio.storage import delete_saved_portfolio, load_portfolio_json, save_portfolio_json
 from modules.portfolio.session_state import (
     add_holding,
     get_portfolio_state,
@@ -45,6 +46,9 @@ K_DELETE_SELECT = "\uc0ad\uc81c\ud560 \uc885\ubaa9"
 K_NO_RESULTS = "\uac80\uc0c9 \uacb0\uacfc\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. \uc885\ubaa9\uba85\uc774\ub098 \ud2f0\ucee4\ub97c \ud655\uc778\ud574\uc8fc\uc138\uc694."
 K_EMPTY = "\uc544\uc9c1 \ud3ec\ud2b8\ud3f4\ub9ac\uc624\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. \uc885\ubaa9\uc744 \uac80\uc0c9\ud574 \ucd94\uac00\ud574\ubcf4\uc138\uc694."
 K_LOAD_SAMPLE = "\uc0d8\ud50c \ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ubd88\ub7ec\uc624\uae30"
+K_SAVE = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \uc800\uc7a5"
+K_LOAD = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ubd88\ub7ec\uc624\uae30"
+K_RESET = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ucd08\uae30\ud654"
 
 
 def build_search_results(query: str) -> list[SearchResult]:
@@ -61,6 +65,36 @@ def build_search_results(query: str) -> list[SearchResult]:
     return results
 
 
+
+def render_portfolio_storage_controls() -> None:
+    """Render portfolio save/load/reset controls."""
+
+    notice = st.session_state.pop("portfolio_storage_notice", None)
+    if notice:
+        st.info(str(notice))
+
+    col_save, col_load, col_reset = st.columns(3)
+    if col_save.button(K_SAVE, width="stretch", key="portfolio_save_button"):
+        success, message = save_portfolio_json(get_portfolio_state())
+        if success:
+            st.success(message)
+        else:
+            st.warning(message)
+    if col_load.button(K_LOAD, width="stretch", key="portfolio_reload_button"):
+        loaded, error = load_portfolio_json()
+        if error:
+            st.warning(error)
+        else:
+            set_portfolio_state(loaded)
+            st.session_state["portfolio_flash"] = "Portfolio loaded."
+            st.rerun()
+    if col_reset.button(K_RESET, width="stretch", key="portfolio_reset_button"):
+        set_portfolio_state(None)
+        delete_saved_portfolio()
+        st.session_state["portfolio_flash"] = "Portfolio reset."
+        st.rerun()
+
+
 def render_portfolio_input(sample_df: pd.DataFrame) -> pd.DataFrame:
     """Render search-first portfolio input backed by Streamlit session state."""
 
@@ -68,6 +102,7 @@ def render_portfolio_input(sample_df: pd.DataFrame) -> pd.DataFrame:
     st.subheader(K_PORTFOLIO_INPUT)
     if st.session_state.pop("portfolio_flash", None):
         st.success("\ud3ec\ud2b8\ud3f4\ub9ac\uc624\uac00 \uac31\uc2e0\ub418\uc5c8\uc2b5\ub2c8\ub2e4.")
+    render_portfolio_storage_controls()
 
     query = st.text_input(K_SEARCH, placeholder=K_SEARCH_PLACEHOLDER, key="portfolio_search_query")
     results = build_search_results(query)

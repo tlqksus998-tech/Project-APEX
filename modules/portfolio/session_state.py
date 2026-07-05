@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from modules.portfolio.input_data import PORTFOLIO_COLUMNS, normalize_portfolio
+from modules.portfolio.storage import load_portfolio_json
 
 PORTFOLIO_STATE_KEY = "portfolio_df"
 
@@ -15,12 +16,19 @@ def empty_portfolio() -> pd.DataFrame:
 
 
 def initialize_portfolio_state(sample_df: pd.DataFrame | None = None) -> None:
-    """Initialize Streamlit portfolio state once per browser session."""
+    """Initialize Streamlit portfolio state once per browser session, loading saved JSON when available."""
 
     if PORTFOLIO_STATE_KEY in st.session_state:
         return
+    saved, error = load_portfolio_json()
+    if not saved.empty:
+        st.session_state[PORTFOLIO_STATE_KEY] = saved
+        st.session_state.setdefault("portfolio_storage_notice", "Saved portfolio loaded.")
+        return
     initial = empty_portfolio() if sample_df is None else normalize_portfolio(sample_df).head(0)
     st.session_state[PORTFOLIO_STATE_KEY] = initial
+    if error and "No saved portfolio" not in error:
+        st.session_state.setdefault("portfolio_storage_notice", error)
 
 
 def get_portfolio_state() -> pd.DataFrame:

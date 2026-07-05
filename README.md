@@ -5,6 +5,23 @@ Project APEX is a Streamlit-based investment decision dashboard for Korean and U
 
 
 
+
+## MVP Sprint 3.8 - Portfolio Save & Load
+
+Project APEX can save and reload the current portfolio as JSON.
+
+Storage path:
+
+- `data/portfolio/portfolio.json`
+
+Portfolio controls:
+
+- Save portfolio: writes the current holdings to JSON.
+- Load portfolio: loads the saved JSON into the current session.
+- Reset portfolio: clears the current session portfolio and deletes the saved JSON when possible.
+
+On app startup, Project APEX tries to load the saved portfolio automatically. If the file is missing or the environment blocks writes, the app shows a friendly message and keeps running.
+
 ## MVP Sprint 3.7 - KOSPI Full Search + Today Candidate Stocks
 
 Project APEX now strengthens KRX/KOSPI search and adds a Today Candidate Stocks section.
