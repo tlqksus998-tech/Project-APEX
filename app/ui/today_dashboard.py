@@ -239,6 +239,12 @@ def render_portfolio_summary(positions: pd.DataFrame, metrics: dict[str, float],
     col4.metric(K_RETURN, format_percent(metrics["return_rate"]))
     col5.metric(K_CASH, format_percent(cash_ratio), help=help_for("Cash Ratio"))
     col6.metric(K_CONCENTRATION, format_percent(concentration), help=help_for("Concentration"))
+    if cash_ratio < 0.10:
+        st.warning("\ud604\uae08\ube44\uc911\uc774 \ubd80\uc871\ud569\ub2c8\ub2e4. 10~20% \ud655\ubcf4\ub97c \uac80\ud1a0\ud558\uc138\uc694.")
+    elif cash_ratio <= 0.20:
+        st.info("\ud604\uae08\ube44\uc911\uc774 \uad8c\uc7a5 \uad6c\uac04\uc5d0 \uac00\uae5d\uc2b5\ub2c8\ub2e4.")
+    else:
+        st.success("\ud604\uae08\ube44\uc911\uc774 \ucda9\ubd84\ud569\ub2c8\ub2e4.")
 
 
 def render_risk_alerts(portfolio_risk: pd.DataFrame) -> None:

@@ -83,3 +83,40 @@ def test_kospi_ticker_search_and_cache_columns():
     assert not refreshed.empty
     assert {"name", "ticker", "market", "asset_type", "search_text"}.issubset(cached.columns)
     assert "009150" in ticker_result["ticker"].tolist()
+
+
+
+def test_operating_search_required_queries():
+    from modules.market.ticker_search import search_tickers
+
+    samsung = search_tickers("\uc0bc\uc131", limit=30)
+    sk = search_tickers("SK", limit=30)
+    ace = search_tickers("S&P500", limit=30)
+    tesla = search_tickers("\ud14c\uc2ac\ub77c", limit=10)
+    broadcom = search_tickers("Broadcom", limit=10)
+
+    assert "005930" in samsung["ticker"].tolist()
+    assert "009150" in samsung["ticker"].tolist()
+    assert "000660" in sk["ticker"].tolist()
+    assert "402340" in sk["ticker"].tolist()
+    assert "360200" in ace["ticker"].tolist()
+    assert "TSLA" in tesla["ticker"].tolist()
+    assert "AVGO" in broadcom["ticker"].tolist()
+
+SAMSUNG_EPIS_HOLDINGS = "\uc0bc\uc131\uc5d0\ud53c\uc2a4\ud640\ub529\uc2a4"
+
+
+def test_krx_alphanumeric_short_code_is_searchable():
+    result_by_name = search_as_dataframe(SAMSUNG_EPIS_HOLDINGS, limit=10)
+    result_by_ticker = search_as_dataframe("0126Z0", limit=10)
+
+    assert "0126Z0" in result_by_name["ticker"].tolist()
+    assert "0126Z0" in result_by_ticker["ticker"].tolist()
+
+
+def test_external_fallback_master_is_merged_into_master_database():
+    data = load_master_database()
+    match = data[data["ticker"].astype(str) == "0126Z0"]
+
+    assert not match.empty
+    assert match.iloc[0]["source"] in {"external_bootstrap", "external_fallback"}

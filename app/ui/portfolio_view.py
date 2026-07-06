@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pandas as pd
 import streamlit as st
 
-from modules.market.master_search import search_as_dataframe
+from modules.market.ticker_search import search_tickers
 from modules.portfolio.storage import delete_saved_portfolio, load_portfolio_json, load_portfolio_json_bytes, portfolio_to_json_bytes, save_portfolio_json
 from modules.portfolio.session_state import (
     add_holding,
@@ -60,7 +60,7 @@ def build_search_results(query: str) -> list[SearchResult]:
     if not clean_query:
         return []
 
-    data = search_as_dataframe(clean_query, limit=30)
+    data = search_tickers(clean_query, limit=30)
     results: list[SearchResult] = []
     for row in data.itertuples(index=False):
         results.append(SearchResult(name=str(row.name), ticker=str(row.ticker), market=str(row.market)))

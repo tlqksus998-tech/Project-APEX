@@ -5,7 +5,7 @@ import pandas as pd
 from modules.risk.risk_models import PortfolioRiskResult
 
 
-LEVERAGE_KEYWORDS = ["????", "2X", "3X", "???", "???", "KORU", "TQQQ", "SOXL", "SQQQ"]
+LEVERAGE_KEYWORDS = ["\ub808\ubc84\ub9ac\uc9c0", "2X", "3X", "\uc778\ubc84\uc2a4", "\uacf1\ubc84\uc2a4", "KORU", "TQQQ", "SOXL", "SQQQ"]
 
 
 def evaluate_portfolio_risk(positions: pd.DataFrame, cash_amount: float = 0.0) -> pd.DataFrame:

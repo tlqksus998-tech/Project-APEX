@@ -1,8 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import re
 
-from modules.market.krx_resolver import is_known_krx_name, krx_name_to_ticker, krx_ticker_to_name, normalize_name
+from modules.market.krx_resolver import is_known_krx_name, is_krx_short_code, krx_name_to_ticker, krx_ticker_to_name, normalize_krx_short_code, normalize_name
 
 
 KOSDAQ_HINTS = {"KQ", "KOSDAQ"}
@@ -54,10 +54,10 @@ def is_index_ticker(ticker: str) -> bool:
 
 
 def is_korean_stock_ticker(ticker: str) -> bool:
-    """Return True for six-digit Korean stock codes or known KRX names."""
+    """Return True for KRX numeric/alphanumeric short codes or known KRX names."""
 
     value = clean_ticker(ticker)
-    return bool(re.fullmatch(r"\d{6}", value)) or value.endswith((".KS", ".KQ")) or is_known_krx_name(str(ticker))
+    return is_krx_short_code(value) or (value.endswith((".KS", ".KQ")) and is_krx_short_code(value[:-3])) or is_known_krx_name(str(ticker))
 
 
 def is_etf_ticker(ticker: str) -> bool:
@@ -96,11 +96,11 @@ def infer_market(ticker: str, market_hint: str | None = None) -> str:
 
 
 def resolve_krx_code(ticker_or_name: str) -> str | None:
-    """Resolve KRX code from a six-digit ticker, suffixed ticker, or Korean name."""
+    """Resolve KRX code from a short code, suffixed ticker, or Korean name."""
 
     value = clean_ticker(ticker_or_name)
-    stripped = value.replace(".KS", "").replace(".KQ", "")
-    if re.fullmatch(r"\d{6}", stripped):
+    stripped = normalize_krx_short_code(value)
+    if is_krx_short_code(stripped):
         return stripped
     return krx_name_to_ticker(str(ticker_or_name))
 
@@ -149,7 +149,7 @@ def display_ticker(ticker: str) -> str:
     """Return a clean display ticker, preserving Korean names when provided."""
 
     code = resolve_krx_code(str(ticker))
-    if code and not re.fullmatch(r"\d{6}(\.KS|\.KQ)?", clean_ticker(ticker)):
+    if code and normalize_krx_short_code(clean_ticker(ticker)) != code:
         return code
     return resolve_us_alias(str(ticker)) or clean_ticker(ticker)
 
@@ -164,3 +164,4 @@ def display_name(ticker_or_name: str) -> str:
     if us_ticker in US_TICKER_NAMES:
         return US_TICKER_NAMES[us_ticker]
     return str(ticker_or_name or "").strip()
+

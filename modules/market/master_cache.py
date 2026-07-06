@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
@@ -9,6 +9,7 @@ MARKET_DATA_DIR = PROJECT_ROOT / "data" / "market"
 CACHE_FILES = {
     "krx_master": MARKET_DATA_DIR / "krx_master.parquet",
     "krx_etf": MARKET_DATA_DIR / "krx_etf.parquet",
+    "krx_external": MARKET_DATA_DIR / "krx_external.parquet",
     "us_master": MARKET_DATA_DIR / "us_master.parquet",
 }
 
@@ -71,3 +72,4 @@ def clear_master_memory_cache() -> None:
         search_instruments.cache_clear()
     except Exception:
         return
+

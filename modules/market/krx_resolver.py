@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from functools import lru_cache
 
@@ -40,6 +40,21 @@ FALLBACK_KRX_NAME_TO_TICKER = {
 FALLBACK_KRX_TICKER_TO_NAME = {ticker: name for name, ticker in FALLBACK_KRX_NAME_TO_TICKER.items()}
 ETF_BRANDS = ("TIGER", "KODEX", "ACE", "KOSEF", "SOL", "RISE", "HANARO", "PLUS")
 
+def normalize_krx_short_code(value: str) -> str:
+    """Normalize KRX short codes without assuming numeric-only tickers."""
+
+    code = str(value or "").strip().upper().replace(".KS", "").replace(".KQ", "")
+    if code.isdigit() and len(code) <= 6:
+        return code.zfill(6)
+    return code
+
+
+def is_krx_short_code(value: str) -> bool:
+    """Return True for KRX numeric or alphanumeric six-character short codes."""
+
+    code = normalize_krx_short_code(value)
+    return len(code) == 6 and code.isalnum() and any(char.isdigit() for char in code)
+
 
 @lru_cache(maxsize=1)
 def get_krx_listing() -> pd.DataFrame:
@@ -60,13 +75,13 @@ def get_krx_listing() -> pd.DataFrame:
         rows.append({"ticker": ticker, "name": name})
 
     frame = pd.DataFrame(rows).drop_duplicates(subset=["ticker"], keep="last")
-    frame["ticker"] = frame["ticker"].astype(str).str.zfill(6)
+    frame["ticker"] = frame["ticker"].map(normalize_krx_short_code)
     frame["name"] = frame["name"].astype(str)
     return frame.reset_index(drop=True)
 
 
 def krx_name_to_ticker(name: str) -> str | None:
-    """Resolve a Korean stock or ETF name to a six-digit KRX ticker."""
+    """Resolve a Korean stock or ETF name to a KRX short code."""
 
     query = normalize_name(name)
     if not query:
@@ -84,9 +99,9 @@ def krx_name_to_ticker(name: str) -> str | None:
 
 
 def krx_ticker_to_name(ticker: str) -> str | None:
-    """Resolve a six-digit KRX ticker to a stock or ETF name."""
+    """Resolve a KRX short code to a stock or ETF name."""
 
-    code = str(ticker or "").strip().replace(".KS", "").replace(".KQ", "").zfill(6)
+    code = normalize_krx_short_code(ticker)
     if code in FALLBACK_KRX_TICKER_TO_NAME:
         return FALLBACK_KRX_TICKER_TO_NAME[code]
 
@@ -126,3 +141,4 @@ def normalize_name(value: str) -> str:
     """Normalize Korean/English instrument names for lookup."""
 
     return "".join(str(value or "").strip().split()).upper()
+

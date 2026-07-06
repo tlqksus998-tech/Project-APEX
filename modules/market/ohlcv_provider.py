@@ -106,7 +106,7 @@ def normalize_pykrx_ohlcv(raw: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=STANDARD_COLUMNS)
 
     frame = raw.copy().reset_index()
-    frame = frame.rename(columns={"??": "date", "??": "open", "??": "high", "??": "low", "??": "close", "???": "volume"})
+    frame = frame.rename(columns={"\ub0a0\uc9dc": "date", "\uc2dc\uac00": "open", "\uace0\uac00": "high", "\uc800\uac00": "low", "\uc885\uac00": "close", "\uac70\ub798\ub7c9": "volume"})
     return normalize_standard_ohlcv(frame)
 
 

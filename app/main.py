@@ -14,8 +14,9 @@ import streamlit as st
 from app.ui.candidate_view import render_candidate_stocks
 from app.ui.help_text import render_terms_help
 from app.ui.onboarding import render_empty_state, render_onboarding
+from app.ui.portfolio_engine_view import render_investment_os_header
 from app.ui.portfolio_view import render_portfolio_errors, render_portfolio_input
-from app.ui.sidebar import render_cash_input, render_market_controls, render_sidebar, render_user_mode
+from app.ui.sidebar import render_cash_inputs, render_market_controls, render_sidebar, render_user_mode, render_version_footer
 from app.ui.summary_view import render_portfolio_ai_summary
 from app.ui.today_dashboard import (
     build_dashboard_table,
@@ -36,6 +37,7 @@ from modules.market import build_market_overview
 from modules.portfolio.calculator import calculate_portfolio_summary
 from modules.portfolio.input_data import get_sample_portfolio, validate_portfolio
 from modules.portfolio.session_state import get_portfolio_state, initialize_portfolio_state
+from modules.portfolio_engine import CashPosition, run_portfolio_engine
 from modules.risk import evaluate_portfolio_risk
 from modules.screening import screen_today_candidates
 from modules.summary import generate_portfolio_summary
@@ -55,7 +57,7 @@ def prices_from_market_overview(overview: pd.DataFrame) -> pd.DataFrame:
     return overview[["ticker", "current_price", "source"]].rename(columns={"source": "price_source"})
 
 
-def run_dashboard_engines(portfolio: pd.DataFrame, cash_amount: float, period: str, interval: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, float], pd.DataFrame]:
+def run_dashboard_engines(portfolio: pd.DataFrame, cash: CashPosition, period: str, interval: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, float], pd.DataFrame]:
     """Run market, analysis, decision, and risk engines with a friendly fallback."""
 
     try:
@@ -64,7 +66,7 @@ def run_dashboard_engines(portfolio: pd.DataFrame, cash_amount: float, period: s
         market_overview, histories = build_market_overview(tickers, config, period=period, interval=interval)
         analysis_results = analyze_many(histories)
         positions, metrics = calculate_portfolio_summary(portfolio, prices_from_market_overview(market_overview))
-        portfolio_risk = evaluate_portfolio_risk(positions, cash_amount=cash_amount)
+        portfolio_risk = evaluate_portfolio_risk(positions, cash_amount=cash.total_cash_krw)
         decision_results = decide_many(analysis_results, portfolio_risk)
         return market_overview, analysis_results, positions, portfolio_risk, metrics, decision_results
     except Exception:
@@ -83,7 +85,8 @@ def main() -> None:
     user_mode = render_user_mode()
     beginner_mode = user_mode == "beginner"
     period, interval = render_market_controls()
-    cash_amount = render_cash_input()
+    cash = render_cash_inputs()
+    render_version_footer()
 
     render_today_title()
     render_onboarding(user_mode)
@@ -100,21 +103,23 @@ def main() -> None:
         return
 
     with st.spinner(K_LOADING):
-        market_overview, analysis_results, positions, portfolio_risk, metrics, decision_results = run_dashboard_engines(portfolio, cash_amount, period, interval)
+        market_overview, analysis_results, positions, portfolio_risk, metrics, decision_results = run_dashboard_engines(portfolio, cash, period, interval)
 
     scores = compute_dashboard_scores(decision_results, portfolio_risk)
     actions = build_today_actions(positions, portfolio_risk, scores)
     dashboard_table = build_dashboard_table(positions, analysis_results, decision_results, portfolio_risk)
     candidates = screen_today_candidates(limit=8)
-    portfolio_summary = generate_portfolio_summary(metrics, positions, decision_results, portfolio_risk, cash_amount)
+    portfolio_snapshot = run_portfolio_engine(positions, metrics, cash)
+    portfolio_summary = generate_portfolio_summary(metrics, positions, decision_results, portfolio_risk, cash.total_cash_krw)
 
+    render_investment_os_header(portfolio_snapshot)
     render_decision_explanation_panel(scores, decision_results, analysis_results, portfolio_risk, beginner_mode=beginner_mode)
     render_portfolio_ai_summary(portfolio_summary)
     render_score_cards(scores, beginner_mode=beginner_mode)
     render_action_card(actions)
     render_candidate_stocks(candidates)
     render_risk_alerts(portfolio_risk)
-    render_portfolio_summary(positions, metrics, cash_amount)
+    render_portfolio_summary(positions, metrics, cash.total_cash_krw)
     render_dashboard_table(dashboard_table, beginner_mode=beginner_mode)
 
     with st.expander(K_INPUT_TITLE, expanded=bool(st.session_state.get("focus_portfolio_input", False))):

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import streamlit as st
 
+from modules.config.version import APP_PRODUCT_NAME, APP_TAGLINE, APP_VERSION, BUILD_NAME
+from modules.portfolio_engine import CashPosition
 from modules.market.master_search import refresh_krx_master_database, refresh_master_database
 
 
@@ -57,9 +59,27 @@ def render_market_controls() -> tuple[str, str]:
     return period, interval
 
 
-def render_cash_input() -> float:
-    """Render temporary cash input until dedicated portfolio cash tracking exists."""
+def render_cash_inputs() -> CashPosition:
+    """Render KRW/USD cash and FX inputs."""
 
     st.sidebar.divider()
-    st.sidebar.subheader("Portfolio")
-    return float(st.sidebar.number_input("Cash Amount", min_value=0.0, value=0.0, step=1000.0))
+    st.sidebar.subheader("Cash / Currency")
+    krw_cash = float(st.sidebar.number_input("KRW Cash", min_value=0.0, value=0.0, step=10000.0))
+    usd_cash = float(st.sidebar.number_input("USD Cash", min_value=0.0, value=0.0, step=100.0))
+    usdkrw = float(st.sidebar.number_input("USD/KRW", min_value=0.0, value=1380.0, step=10.0))
+    return CashPosition(krw_cash=krw_cash, usd_cash=usd_cash, usdkrw=usdkrw)
+
+
+def render_cash_input() -> float:
+    """Backward-compatible total cash input helper."""
+
+    return render_cash_inputs().total_cash_krw
+
+
+def render_version_footer() -> None:
+    """Render version footer in the sidebar."""
+
+    st.sidebar.divider()
+    st.sidebar.caption(APP_PRODUCT_NAME)
+    st.sidebar.caption(APP_TAGLINE)
+    st.sidebar.caption(f"v{APP_VERSION} {BUILD_NAME}")

@@ -50,3 +50,10 @@ def test_us_name_aliases_resolve_to_tickers():
     assert resolve_input_symbol("KORU") == ("KORU", "KORU", "US")
     assert resolve_input_symbol("MU") == ("Micron", "MU", "US")
     assert to_yfinance_ticker(MICRON_KO) == "MU"
+
+
+def test_krx_alphanumeric_ticker_detection():
+    assert is_korean_stock_ticker("0126Z0")
+    assert infer_market("0126Z0") == "KR"
+    assert to_yfinance_ticker("0126Z0") == "0126Z0.KS"
+    assert resolve_input_symbol("0126Z0") == ("0126Z0", "0126Z0", "KR")
