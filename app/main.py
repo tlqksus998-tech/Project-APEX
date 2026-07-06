@@ -20,6 +20,7 @@ from app.ui.macro_view import render_fear_greed_placeholder, render_macro_market
 from app.ui.news_view import render_market_issues_placeholder
 from app.ui.onboarding import render_empty_state, render_onboarding
 from app.ui.portfolio_engine_view import render_investment_os_header
+from app.ui.pro_gate_view import render_disclaimer
 from app.ui.portfolio_view import render_portfolio_errors, render_portfolio_input
 from app.ui.sidebar import render_cash_inputs, render_market_controls, render_sidebar, render_user_mode, render_version_footer
 from app.ui.summary_view import render_portfolio_ai_summary
@@ -108,6 +109,7 @@ def main() -> None:
     portfolio, errors = validate_portfolio(get_portfolio_state())
     if portfolio.empty:
         render_brand_header(initial_freshness)
+        render_disclaimer(beginner_mode)
         render_freshness_bar(initial_freshness)
         render_morning_brief(macro_brief)
         render_macro_market_cards(macro_brief.overview)
@@ -146,6 +148,7 @@ def main() -> None:
     portfolio_summary = generate_portfolio_summary(metrics, positions, decision_results, portfolio_risk, cash.total_cash_krw)
 
     render_brand_header(freshness)
+    render_disclaimer(beginner_mode)
     render_freshness_bar(freshness)
     render_morning_brief(macro_brief)
     render_macro_market_cards(macro_brief.overview)
@@ -162,6 +165,8 @@ def main() -> None:
         render_candidate_stocks(candidates)
         render_risk_alerts(portfolio_risk)
         render_portfolio_summary(positions, metrics, cash.total_cash_krw)
+
+    render_disclaimer(beginner_mode)
 
     with st.expander(K_INPUT_TITLE, expanded=bool(st.session_state.get("focus_portfolio_input", False))):
         edited_portfolio = render_portfolio_input(get_sample_portfolio())
@@ -183,6 +188,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 

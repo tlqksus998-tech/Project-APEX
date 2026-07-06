@@ -1,8 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
 
+from modules.config.app_tier import get_app_tier
+from modules.config.feature_flags import get_feature_value, is_unlimited
 from modules.portfolio.input_data import PORTFOLIO_COLUMNS, normalize_portfolio
 from modules.portfolio.storage import load_portfolio_json
 
@@ -55,6 +57,9 @@ def add_holding(name: str, ticker: str, quantity: float, avg_price: float) -> tu
         return False, "Average price cannot be negative."
 
     portfolio = get_portfolio_state()
+    limit = get_feature_value("max_portfolio_positions", get_app_tier())
+    if not is_unlimited(limit) and len(portfolio) >= int(limit):
+        return False, "무료버전에서는 보유종목을 최대 5개까지 입력할 수 있습니다. 더 많은 종목을 관리하려면 Pro 버전을 이용하세요."
     new_row = pd.DataFrame(
         [{"name": name, "ticker": ticker, "quantity": float(quantity), "avg_price": float(avg_price)}],
         columns=PORTFOLIO_COLUMNS,
@@ -79,3 +84,4 @@ def remove_holding(ticker: str) -> None:
     if portfolio.empty:
         return
     set_portfolio_state(portfolio[portfolio["ticker"].astype(str) != str(ticker)])
+

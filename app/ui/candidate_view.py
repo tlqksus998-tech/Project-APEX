@@ -1,39 +1,111 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
 
-K_TITLE = "\uc624\ub298\uc758 \uad00\uc2ec \ud6c4\ubcf4"
-K_NOTICE = "\uc870\uac74\uc5d0 \ub9de\ub294 \uad00\uc2ec \ud6c4\ubcf4\uc774\uba70, \ucd5c\uc885 \ub9e4\uc218 \uc5ec\ubd80\ub294 \ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ube44\uc911\uacfc \ub9ac\uc2a4\ud06c\ub97c \ud568\uaed8 \ud655\uc778\ud558\uc138\uc694."
-K_EMPTY = "\ud45c\uc2dc\ud560 \uad00\uc2ec \ud6c4\ubcf4\uac00 \uc544\uc9c1 \uc5c6\uc2b5\ub2c8\ub2e4. KRX \uc885\ubaa9 DB\ub97c \uc0c8\ub85c\uace0\uce68\ud558\uac70\ub098 \uc7a0\uc2dc \ud6c4 \ub2e4\uc2dc \ud655\uc778\ud558\uc138\uc694."
+from app.ui.pro_gate_view import render_pro_locked_card
+from modules.config.app_tier import get_app_tier
+from modules.config.feature_flags import get_feature_value, is_unlimited
+
+K_TITLE = "오늘의 관심 후보"
+K_NOTICE = "오늘의 관심 후보는 바로 매수하라는 의미가 아닙니다. 시장 상황, 종목 흐름, 포트폴리오 비중을 함께 확인하기 위한 검토 대상입니다."
+K_EMPTY = "표시할 관심 후보가 아직 없습니다. KRX 종목 DB를 새로고침하거나 잠시 후 다시 확인하세요."
 
 
 def render_candidate_stocks(candidates: pd.DataFrame) -> None:
-    """Render today's candidate stocks section."""
+    """Render beginner-friendly watchlist candidate cards."""
 
     st.subheader(K_TITLE)
     st.caption(K_NOTICE)
     if candidates is None or candidates.empty:
         st.info(K_EMPTY)
         return
-    display = candidates.copy()
-    display["reasons"] = display["reasons"].map(format_reasons)
-    display = display.rename(
-        columns={
-            "name": "\uc885\ubaa9\uba85",
-            "ticker": "\ud2f0\ucee4",
-            "final_score": "\uc810\uc218",
-            "decision": "\ud310\ub2e8",
-            "reasons": "\uc8fc\uc694 \uc774\uc720",
-        }
-    )
-    columns = ["\uc885\ubaa9\uba85", "\ud2f0\ucee4", "\uc810\uc218", "\ud310\ub2e8", "\uc8fc\uc694 \uc774\uc720"]
-    st.dataframe(display[[column for column in columns if column in display.columns]], width="stretch", hide_index=True)
+
+    tier = get_app_tier()
+    limit = get_feature_value("watchlist_limit", tier)
+    visible_count = len(candidates) if is_unlimited(limit) else min(int(limit), len(candidates))
+    visible = candidates.head(visible_count).reset_index(drop=True)
+
+    for _, row in visible.iterrows():
+        render_candidate_card(row, show_full_reasons=bool(get_feature_value("pro_candidate_reason", tier)))
+
+    hidden_count = max(0, len(candidates) - visible_count)
+    if hidden_count > 0:
+        render_pro_locked_card(
+            "Pro 관심 후보",
+            f"무료버전에서는 오늘의 관심 후보를 최대 {visible_count}개까지 표시합니다. {hidden_count}개 후보의 상세 검토는 Pro에서 제공됩니다.",
+        )
+
+
+def render_candidate_card(row: pd.Series, show_full_reasons: bool = False) -> None:
+    """Render one candidate as an explanatory card."""
+
+    name = str(row.get("name", ""))
+    ticker = str(row.get("ticker", ""))
+    score = safe_float(row.get("final_score"))
+    status = map_watch_status(score)
+    reasons = normalize_reasons(row.get("reasons"))
+    shown_reasons = reasons[:3] if show_full_reasons else reasons[:2]
+
+    with st.container(border=True):
+        col_title, col_status = st.columns([0.68, 0.32], vertical_alignment="center")
+        col_title.markdown(f"### {name}")
+        col_title.caption(ticker)
+        col_status.metric("상태", status)
+        st.write(beginner_explanation(status))
+        st.markdown("**핵심 이유**")
+        for reason in shown_reasons:
+            st.write(f"- {reason}")
+        if not show_full_reasons:
+            st.caption("상세 사유와 포트폴리오 기반 승인/보류 판단은 Pro에서 제공됩니다.")
+        st.warning("주의사항: 관심 후보는 매수 지시가 아닙니다. 현금비중, 손실 위험, 기존 보유 비중을 함께 확인하세요.")
+
+
+def map_watch_status(score: float) -> str:
+    """Map numeric score into beginner-friendly watch status."""
+
+    if score >= 80:
+        return "Strong Watch"
+    if score >= 65:
+        return "Watch"
+    if score >= 45:
+        return "Wait"
+    return "Avoid"
+
+
+def beginner_explanation(status: str) -> str:
+    """Return beginner-friendly explanation for a watch status."""
+
+    explanations = {
+        "Strong Watch": "이 종목은 오늘 우선적으로 살펴볼 만합니다. 다만 바로 매수하기보다 분할 접근과 비중을 먼저 확인하세요.",
+        "Watch": "관심을 두고 흐름을 확인할 만합니다. 시장 상황과 내 포트폴리오 여유를 함께 보세요.",
+        "Wait": "아직은 기다리며 확인하는 편이 좋습니다. 추가 신호가 생기는지 지켜보세요.",
+        "Avoid": "현재는 리스크가 상대적으로 커 보입니다. 무리한 진입은 피하는 편이 좋습니다.",
+    }
+    return explanations.get(status, explanations["Wait"])
+
+
+def normalize_reasons(value: object) -> list[str]:
+    """Normalize reason payload into a short list."""
+
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item).strip()]
+    text = str(value or "").strip()
+    if not text:
+        return ["시장 흐름 확인 필요", "포트폴리오 비중 확인 필요"]
+    return [part.strip() for part in text.split("|") if part.strip()]
+
+
+def safe_float(value: object) -> float:
+    """Convert a value to float with zero fallback."""
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def format_reasons(value: object) -> str:
-    """Format reason list for table display."""
+    """Backward-compatible reason formatter."""
 
-    if isinstance(value, list):
-        return " | ".join(str(item) for item in value[:3])
-    return str(value or "")
+    return " | ".join(normalize_reasons(value)[:3])

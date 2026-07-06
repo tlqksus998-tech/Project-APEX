@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+from modules.config.app_tier import get_app_tier, is_free
 from modules.config.version import APP_NAME, APP_VERSION, BUILD_DATE, BUILD_NAME
 from modules.market.fx_provider import get_usdkrw_rate
 from modules.portfolio_engine import CashPosition
@@ -92,9 +93,13 @@ def render_version_footer() -> None:
     """Render version footer in the sidebar."""
 
     st.sidebar.divider()
+    st.sidebar.caption(f"Current Plan: {get_app_tier()}")
+    if is_free():
+        st.sidebar.caption("Pro 기능 체험 준비 중")
     st.sidebar.caption(f"{APP_NAME} {APP_VERSION}")
     st.sidebar.caption(BUILD_NAME)
     st.sidebar.caption(f"Last Updated: {BUILD_DATE}")
+
 
 
 
