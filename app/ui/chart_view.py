@@ -1,8 +1,12 @@
 ﻿from __future__ import annotations
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
+
+try:
+    import plotly.express as px
+except Exception:  # pragma: no cover - cloud dependency fallback
+    px = None
 
 from modules.market.macro_models import MacroDashboard
 from modules.market.macro_provider import CHART_INSTRUMENTS
@@ -23,9 +27,24 @@ def render_macro_mini_charts(macro_data: MacroDashboard | dict[str, pd.DataFrame
                 if history.empty:
                     st.info("차트 데이터 조회 실패")
                     continue
-                fig = px.line(history, x="date", y="close", height=220)
-                fig.update_layout(margin=dict(l=8, r=8, t=8, b=8), xaxis_title=None, yaxis_title=None, showlegend=False)
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                render_line_chart(history)
+
+
+def render_line_chart(history: pd.DataFrame) -> None:
+    """Render a line chart with Plotly when available and Streamlit fallback otherwise."""
+
+    chart_data = history[["date", "close"]].dropna().copy()
+    if chart_data.empty:
+        st.info("차트 데이터 조회 실패")
+        return
+    if px is not None:
+        fig = px.line(chart_data, x="date", y="close", height=220)
+        fig.update_layout(margin=dict(l=8, r=8, t=8, b=8), xaxis_title=None, yaxis_title=None, showlegend=False)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        return
+    fallback = chart_data.set_index("date")["close"]
+    st.line_chart(fallback, height=220)
+    st.caption("Plotly를 사용할 수 없어 기본 Streamlit 차트로 표시합니다.")
 
 
 def get_chart_history(macro_data: MacroDashboard | dict[str, pd.DataFrame], name: str, chart_key: str) -> pd.DataFrame:
