@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -12,6 +12,7 @@ import pandas as pd
 import streamlit as st
 
 from app.ui.candidate_view import render_candidate_stocks
+from app.ui.freshness_view import render_freshness_bar, render_freshness_sidebar, render_product_header
 from app.ui.help_text import render_terms_help
 from app.ui.onboarding import render_empty_state, render_onboarding
 from app.ui.portfolio_engine_view import render_investment_os_header
@@ -28,10 +29,10 @@ from app.ui.today_dashboard import (
     render_portfolio_summary,
     render_risk_alerts,
     render_score_cards,
-    render_today_title,
 )
 from modules.analysis import analyze_many
 from modules.config import get_config
+from modules.data_freshness import build_freshness_snapshot, mark_analysis_run
 from modules.decision import decide_many
 from modules.market import build_market_overview
 from modules.portfolio.calculator import calculate_portfolio_summary
@@ -53,8 +54,8 @@ def prices_from_market_overview(overview: pd.DataFrame) -> pd.DataFrame:
     """Convert market overview rows into portfolio price rows."""
 
     if overview.empty:
-        return pd.DataFrame(columns=["ticker", "current_price", "price_source"])
-    return overview[["ticker", "current_price", "source"]].rename(columns={"source": "price_source"})
+        return pd.DataFrame(columns=["ticker", "current_price", "price_source", "market", "currency"])
+    return overview[["ticker", "current_price", "source", "market", "currency"]].rename(columns={"source": "price_source"})
 
 
 def run_dashboard_engines(portfolio: pd.DataFrame, cash: CashPosition, period: str, interval: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, float], pd.DataFrame]:
@@ -65,7 +66,7 @@ def run_dashboard_engines(portfolio: pd.DataFrame, cash: CashPosition, period: s
         tickers = portfolio["ticker"].tolist() if not portfolio.empty else []
         market_overview, histories = build_market_overview(tickers, config, period=period, interval=interval)
         analysis_results = analyze_many(histories)
-        positions, metrics = calculate_portfolio_summary(portfolio, prices_from_market_overview(market_overview))
+        positions, metrics = calculate_portfolio_summary(portfolio, prices_from_market_overview(market_overview), usdkrw=cash.usdkrw)
         portfolio_risk = evaluate_portfolio_risk(positions, cash_amount=cash.total_cash_krw)
         decision_results = decide_many(analysis_results, portfolio_risk)
         return market_overview, analysis_results, positions, portfolio_risk, metrics, decision_results
@@ -88,11 +89,18 @@ def main() -> None:
     cash = render_cash_inputs()
     render_version_footer()
 
-    render_today_title()
-    render_onboarding(user_mode)
+    initial_freshness = build_freshness_snapshot(
+        fx_rate=cash.usdkrw,
+        fx_updated_at=st.session_state.get("fx_updated_at"),
+        fx_source=st.session_state.get("fx_source", "manual"),
+    )
 
     portfolio, errors = validate_portfolio(get_portfolio_state())
     if portfolio.empty:
+        render_product_header(initial_freshness)
+        render_freshness_bar(initial_freshness)
+        render_onboarding(user_mode)
+        render_freshness_sidebar(initial_freshness)
         render_empty_state()
         with st.expander(K_INPUT_TITLE, expanded=True):
             edited_portfolio = render_portfolio_input(get_sample_portfolio())
@@ -104,6 +112,15 @@ def main() -> None:
 
     with st.spinner(K_LOADING):
         market_overview, analysis_results, positions, portfolio_risk, metrics, decision_results = run_dashboard_engines(portfolio, cash, period, interval)
+    analysis_run_at = mark_analysis_run()
+    freshness = build_freshness_snapshot(
+        fx_rate=cash.usdkrw,
+        fx_updated_at=st.session_state.get("fx_updated_at"),
+        fx_source=st.session_state.get("fx_source", "manual"),
+        price_updated_at=analysis_run_at if not market_overview.empty else None,
+        analysis_run_at=analysis_run_at,
+    )
+    render_freshness_sidebar(freshness)
 
     scores = compute_dashboard_scores(decision_results, portfolio_risk)
     actions = build_today_actions(positions, portfolio_risk, scores)
@@ -112,6 +129,9 @@ def main() -> None:
     portfolio_snapshot = run_portfolio_engine(positions, metrics, cash)
     portfolio_summary = generate_portfolio_summary(metrics, positions, decision_results, portfolio_risk, cash.total_cash_krw)
 
+    render_product_header(freshness)
+    render_freshness_bar(freshness)
+    render_onboarding(user_mode)
     render_investment_os_header(portfolio_snapshot)
     render_decision_explanation_panel(scores, decision_results, analysis_results, portfolio_risk, beginner_mode=beginner_mode)
     render_portfolio_ai_summary(portfolio_summary)
@@ -142,3 +162,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+
+

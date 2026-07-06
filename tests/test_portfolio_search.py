@@ -1,4 +1,4 @@
-from app.ui.portfolio_view import build_search_results
+﻿from app.ui.portfolio_view import build_search_results
 
 SAMSUNG = "\uc0bc\uc131"
 SK_HYNIX = "SK\ud558\uc774\ub2c9\uc2a4"
@@ -13,8 +13,8 @@ def labels(query: str) -> list[str]:
 def test_search_suggests_samsung_names():
     result_labels = labels(SAMSUNG)
 
-    assert "\uc0bc\uc131\uc804\uc790 (005930)" in result_labels
-    assert "\uc0bc\uc131SDI (006400)" in result_labels
+    assert "\uc0bc\uc131\uc804\uc790 / 005930 / KRW" in result_labels
+    assert "\uc0bc\uc131SDI / 006400 / KRW" in result_labels
 
 
 def test_search_resolves_requested_inputs():
@@ -23,3 +23,4 @@ def test_search_resolves_requested_inputs():
     assert build_search_results("KORU")[0].ticker == "KORU"
     assert build_search_results("MU")[0].ticker == "MU"
     assert build_search_results(MICRON_KO)[0].ticker == "MU"
+

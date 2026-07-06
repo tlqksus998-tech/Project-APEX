@@ -35,3 +35,32 @@ def test_portfolio_engine_total_assets():
     assert snapshot.total_assets_krw == 1_138_000
     assert snapshot.total_cash_krw == 338000
     assert snapshot.cash_ratio > 0
+
+
+def test_currency_normalization_by_ticker_and_market():
+    from modules.portfolio.calculator import calculate_portfolio_summary, infer_trading_currency
+
+    assert infer_trading_currency("MU", "US") == "USD"
+    assert infer_trading_currency("KORU", "NYSEARCA") == "USD"
+    assert infer_trading_currency("000660", "KR") == "KRW"
+    assert infer_trading_currency("360750", "KR") == "KRW"
+    assert infer_trading_currency("0126Z0", "KR") == "KRW"
+
+    portfolio = pd.DataFrame(
+        [
+            {"name": "SK hynix", "ticker": "000660", "quantity": 2, "avg_price": 100000},
+            {"name": "Micron", "ticker": "MU", "quantity": 3, "avg_price": 100},
+        ]
+    )
+    prices = pd.DataFrame(
+        [
+            {"ticker": "000660", "current_price": 120000, "price_source": "test", "market": "KR", "currency": "KRW"},
+            {"ticker": "MU", "current_price": 110, "price_source": "test", "market": "US", "currency": "USD"},
+        ]
+    )
+    positions, metrics = calculate_portfolio_summary(portfolio, prices, usdkrw=1380)
+
+    assert positions.loc[positions["ticker"] == "MU", "value_krw"].iloc[0] == 3 * 110 * 1380
+    assert positions.loc[positions["ticker"] == "000660", "value_krw"].iloc[0] == 2 * 120000
+    assert metrics["total_current_value"] == (2 * 120000) + (3 * 110 * 1380)
+    assert metrics["usd_current_value_original"] == 330

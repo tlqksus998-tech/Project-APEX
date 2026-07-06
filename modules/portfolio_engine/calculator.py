@@ -1,19 +1,28 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pandas as pd
 
+from modules.market.ticker_utils import infer_market, is_us_stock_ticker
 from modules.portfolio_engine.asset_models import Asset
 from modules.portfolio_engine.cash_manager import CashPosition, calculate_investable_cash
 from modules.portfolio_engine.models import PortfolioEngineSnapshot
 
 US_MARKETS = {"US", "NASDAQ", "NYSE", "AMEX", "NYSEARCA", "OTHER"}
+KR_MARKETS = {"KR", "KRX", "KOSPI", "KOSDAQ", "KONEX"}
 
 
 def infer_currency(market: str, ticker: str = "") -> str:
-    """Infer trading currency from market/ticker."""
+    """Infer trading currency from market/ticker without misclassifying KRX special codes."""
 
     value = str(market or "").upper()
-    if value in US_MARKETS or str(ticker or "").isalpha():
+    if value in KR_MARKETS:
+        return "KRW"
+    if value in US_MARKETS:
+        return "USD"
+    inferred = infer_market(str(ticker or ""))
+    if inferred == "KR":
+        return "KRW"
+    if inferred == "US" or is_us_stock_ticker(str(ticker or "")):
         return "USD"
     return "KRW"
 
@@ -22,9 +31,12 @@ def infer_region(market: str, ticker: str = "") -> str:
     """Infer exposure region from market/ticker."""
 
     value = str(market or "").upper()
-    if value in US_MARKETS or str(ticker or "").isalpha():
+    if value in KR_MARKETS:
+        return "Korea"
+    if value in US_MARKETS:
         return "US"
-    return "Korea"
+    inferred = infer_market(str(ticker or ""))
+    return "US" if inferred == "US" else "Korea" if inferred == "KR" else "Unknown"
 
 
 def build_assets_from_positions(positions: pd.DataFrame, cash: CashPosition | None = None) -> list[Asset]:
@@ -36,12 +48,14 @@ def build_assets_from_positions(positions: pd.DataFrame, cash: CashPosition | No
     assets: list[Asset] = []
     for row in positions.to_dict(orient="records"):
         ticker = str(row.get("ticker", ""))
-        market = str(row.get("market", "KRX") or "KRX")
-        currency = infer_currency(market, ticker)
+        market = str(row.get("market", "KR") or "KR")
+        currency = str(row.get("trading_currency") or infer_currency(market, ticker)).upper()
         fx_rate = cash.usdkrw if currency == "USD" else 1.0
         quantity = safe_float(row.get("quantity"))
-        current_price = safe_float(row.get("current_price"))
-        original_value = quantity * current_price
+        average_price = safe_float(row.get("average_price_original", row.get("avg_price")))
+        current_price = safe_float(row.get("current_price_original", row.get("current_price")))
+        original_value = safe_float(row.get("value_original_currency", quantity * current_price))
+        value_krw = safe_float(row.get("value_krw", original_value * fx_rate))
         assets.append(
             Asset(
                 ticker=ticker,
@@ -51,11 +65,13 @@ def build_assets_from_positions(positions: pd.DataFrame, cash: CashPosition | No
                 trading_currency=currency,
                 exposure_region=infer_region(market, ticker),
                 quantity=quantity,
-                average_price=safe_float(row.get("avg_price")),
+                average_price=average_price,
                 current_price=current_price,
+                average_price_original=average_price,
+                current_price_original=current_price,
                 value_original_currency=original_value,
                 fx_rate=fx_rate,
-                value_krw=original_value * fx_rate,
+                value_krw=value_krw,
                 weight=safe_float(row.get("weight")),
             )
         )
@@ -82,11 +98,18 @@ def build_portfolio_snapshot(positions: pd.DataFrame, metrics: dict[str, float] 
     total_cash = cash.total_cash_krw
     total_assets = asset_value + total_cash
     cash_ratio = total_cash / total_assets if total_assets > 0 else 0.0
+    krw_asset_value = sum(asset.value_krw for asset in assets if asset.trading_currency == "KRW")
+    usd_asset_value_krw = sum(asset.value_krw for asset in assets if asset.trading_currency == "USD")
+    usd_asset_value_original = sum(asset.value_original_currency for asset in assets if asset.trading_currency == "USD")
     return PortfolioEngineSnapshot(
         assets=assets,
         total_assets_krw=total_assets,
         total_invested_krw=invested,
         total_cash_krw=total_cash,
+        total_current_value_krw=asset_value,
+        krw_current_value=krw_asset_value,
+        usd_current_value_original=usd_asset_value_original,
+        usd_current_value_krw=usd_asset_value_krw,
         cash_ratio=cash_ratio,
         krw_cash=max(cash.krw_cash, 0.0),
         usd_cash=max(cash.usd_cash, 0.0),

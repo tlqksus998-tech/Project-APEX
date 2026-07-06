@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -19,6 +19,8 @@ class Asset:
     quantity: float = 0.0
     average_price: float = 0.0
     current_price: float = 0.0
+    average_price_original: float = 0.0
+    current_price_original: float = 0.0
     value_original_currency: float = 0.0
     fx_rate: float = 1.0
     value_krw: float = 0.0

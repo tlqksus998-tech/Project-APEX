@@ -120,3 +120,15 @@ def test_external_fallback_master_is_merged_into_master_database():
 
     assert not match.empty
     assert match.iloc[0]["source"] in {"external_bootstrap", "external_fallback"}
+
+
+def test_master_search_special_tickers_and_index_columns():
+    data = load_master_database()
+    epis = search_as_dataframe(SAMSUNG_EPIS_HOLDINGS, limit=10)
+    samsung_electro = search_as_dataframe(SAMSUNG_ELECTRO, limit=10)
+    sk_square = search_as_dataframe(SK_SQUARE, limit=10)
+
+    assert {"short_code", "normalized_name", "normalized_ticker"}.issubset(data.columns)
+    assert "0126Z0" in epis["ticker"].tolist()
+    assert "009150" in samsung_electro["ticker"].tolist()
+    assert "402340" in sk_square["ticker"].tolist()

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
@@ -223,29 +223,34 @@ def color_decision_cell(value: object) -> str:
 
 
 def render_portfolio_summary(positions: pd.DataFrame, metrics: dict[str, float], cash_amount: float) -> None:
-    """Render portfolio summary metrics."""
+    """Render portfolio summary metrics with KRW/USD normalized valuation."""
 
     st.subheader("Portfolio Summary")
-    total_value = float(metrics["total_current_value"])
+    total_value = float(metrics.get("total_current_value", 0.0))
     cash_ratio = cash_amount / (cash_amount + total_value) if (cash_amount + total_value) > 0 else 0.0
     concentration = float(positions["weight"].max()) if not positions.empty else 0.0
 
     col1, col2, col3 = st.columns(3)
-    col1.metric(K_INVESTED, format_currency(metrics["total_invested"]))
-    col2.metric(K_VALUE, format_currency(metrics["total_current_value"]))
-    col3.metric(K_PROFIT, format_currency(metrics["profit_loss"]))
+    col1.metric("원화 평가금액", format_currency(metrics.get("krw_current_value", 0.0)))
+    col2.metric("달러 평가금액", f"${float(metrics.get('usd_current_value_original', 0.0)):,.2f}")
+    col3.metric("총 평가금액(KRW 환산)", format_currency(metrics.get("total_current_value", 0.0)))
 
     col4, col5, col6 = st.columns(3)
-    col4.metric(K_RETURN, format_percent(metrics["return_rate"]))
-    col5.metric(K_CASH, format_percent(cash_ratio), help=help_for("Cash Ratio"))
-    col6.metric(K_CONCENTRATION, format_percent(concentration), help=help_for("Concentration"))
-    if cash_ratio < 0.10:
-        st.warning("\ud604\uae08\ube44\uc911\uc774 \ubd80\uc871\ud569\ub2c8\ub2e4. 10~20% \ud655\ubcf4\ub97c \uac80\ud1a0\ud558\uc138\uc694.")
-    elif cash_ratio <= 0.20:
-        st.info("\ud604\uae08\ube44\uc911\uc774 \uad8c\uc7a5 \uad6c\uac04\uc5d0 \uac00\uae5d\uc2b5\ub2c8\ub2e4.")
-    else:
-        st.success("\ud604\uae08\ube44\uc911\uc774 \ucda9\ubd84\ud569\ub2c8\ub2e4.")
+    col4.metric("KRW 비중", format_percent(metrics.get("krw_weight", 0.0)))
+    col5.metric("USD 비중", format_percent(metrics.get("usd_weight", 0.0)))
+    col6.metric(K_RETURN, format_percent(metrics.get("return_rate", 0.0)))
 
+    col7, col8, col9 = st.columns(3)
+    col7.metric(K_INVESTED, format_currency(metrics.get("total_invested", 0.0)))
+    col8.metric(K_CASH, format_percent(cash_ratio), help=help_for("Cash Ratio"))
+    col9.metric(K_CONCENTRATION, format_percent(concentration), help=help_for("Concentration"))
+
+    if cash_ratio < 0.10:
+        st.warning("현금비중이 부족합니다. 10~20% 확보를 검토하세요.")
+    elif cash_ratio <= 0.20:
+        st.info("현금비중이 권장 구간에 가깝습니다.")
+    else:
+        st.success("현금비중이 충분합니다.")
 
 def render_risk_alerts(portfolio_risk: pd.DataFrame) -> None:
     """Render High/Medium/Low risk alert card."""
@@ -269,3 +274,4 @@ def render_risk_alerts(portfolio_risk: pd.DataFrame) -> None:
             messages = row.get("risk_messages", [])
             if messages:
                 st.write(f"{row['ticker']}: " + " | ".join(messages))
+

@@ -1,8 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import streamlit as st
 
-from modules.config.version import APP_PRODUCT_NAME, APP_TAGLINE, APP_VERSION, BUILD_NAME
+from modules.config.version import APP_NAME, APP_VERSION, BUILD_DATE, BUILD_NAME
+from modules.market.fx_provider import get_usdkrw_rate
 from modules.portfolio_engine import CashPosition
 from modules.market.master_search import refresh_krx_master_database, refresh_master_database
 
@@ -66,9 +67,20 @@ def render_cash_inputs() -> CashPosition:
     st.sidebar.subheader("Cash / Currency")
     krw_cash = float(st.sidebar.number_input("KRW Cash", min_value=0.0, value=0.0, step=10000.0))
     usd_cash = float(st.sidebar.number_input("USD Cash", min_value=0.0, value=0.0, step=100.0))
-    usdkrw = float(st.sidebar.number_input("USD/KRW", min_value=0.0, value=1380.0, step=10.0))
+    if "fx_rate" not in st.session_state:
+        st.session_state["fx_rate"] = 1380.0
+    if st.sidebar.button("환율 최신화", width="stretch", key="refresh_fx_rate"):
+        result = get_usdkrw_rate(float(st.session_state.get("fx_rate", 1380.0)))
+        st.session_state["fx_rate"] = result.rate
+        st.session_state["fx_updated_at"] = result.updated_at
+        st.session_state["fx_source"] = result.source
+        if result.success:
+            st.sidebar.success(f"환율: {result.rate:,.1f}원")
+        else:
+            st.sidebar.warning(result.message)
+    usdkrw = float(st.sidebar.number_input("USD/KRW", min_value=0.0, value=float(st.session_state.get("fx_rate", 1380.0)), step=10.0))
+    st.session_state["fx_rate"] = usdkrw
     return CashPosition(krw_cash=krw_cash, usd_cash=usd_cash, usdkrw=usdkrw)
-
 
 def render_cash_input() -> float:
     """Backward-compatible total cash input helper."""
@@ -80,6 +92,9 @@ def render_version_footer() -> None:
     """Render version footer in the sidebar."""
 
     st.sidebar.divider()
-    st.sidebar.caption(APP_PRODUCT_NAME)
-    st.sidebar.caption(APP_TAGLINE)
-    st.sidebar.caption(f"v{APP_VERSION} {BUILD_NAME}")
+    st.sidebar.caption(f"{APP_NAME} {APP_VERSION}")
+    st.sidebar.caption(BUILD_NAME)
+    st.sidebar.caption(f"Last Updated: {BUILD_DATE}")
+
+
+

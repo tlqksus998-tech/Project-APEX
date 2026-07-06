@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass, field
 
@@ -13,6 +13,10 @@ class PortfolioEngineSnapshot:
     total_assets_krw: float = 0.0
     total_invested_krw: float = 0.0
     total_cash_krw: float = 0.0
+    total_current_value_krw: float = 0.0
+    krw_current_value: float = 0.0
+    usd_current_value_original: float = 0.0
+    usd_current_value_krw: float = 0.0
     cash_ratio: float = 0.0
     krw_cash: float = 0.0
     usd_cash: float = 0.0

@@ -15,7 +15,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency fallback
     stock = None
 
-COLUMNS = ["ticker", "name", "english_name", "market", "asset_type", "source", "aliases", "search_text"]
+COLUMNS = ["ticker", "short_code", "name", "english_name", "market", "asset_type", "source", "aliases", "normalized_name", "normalized_ticker", "search_text"]
 
 FALLBACK_KRX_EXTRA = {
     "\uc0bc\uc131\uc804\uae30": "009150",
@@ -68,6 +68,9 @@ def normalize_master_frame(data: pd.DataFrame) -> pd.DataFrame:
     for column in COLUMNS:
         frame[column] = frame[column].fillna("").astype(str).str.strip()
     frame["ticker"] = frame["ticker"].map(normalize_krx_short_code)
+    frame["short_code"] = frame["short_code"].where(frame["short_code"] != "", frame["ticker"]).map(normalize_krx_short_code)
+    frame["normalized_name"] = frame["name"].map(normalize_name)
+    frame["normalized_ticker"] = frame["ticker"].map(normalize_name)
     frame["search_text"] = frame.apply(build_search_text, axis=1)
     frame = frame[frame["ticker"] != ""]
     return frame.drop_duplicates(subset=["ticker", "market"], keep="last").reset_index(drop=True)
@@ -77,7 +80,7 @@ def normalize_master_frame(data: pd.DataFrame) -> pd.DataFrame:
 def build_search_text(row: pd.Series) -> str:
     """Build space-insensitive searchable text for one instrument."""
 
-    values = [row.get("ticker", ""), row.get("name", ""), row.get("english_name", ""), row.get("aliases", "")]
+    values = [row.get("ticker", ""), row.get("short_code", ""), row.get("name", ""), row.get("english_name", ""), row.get("aliases", ""), row.get("normalized_name", ""), row.get("normalized_ticker", "")]
     return " ".join(normalize_name(str(value)) for value in values if str(value or "").strip())
 
 
@@ -245,4 +248,5 @@ def load_master_database() -> pd.DataFrame:
     # Put fallback rows last so alias/search_text upgrades override old cache rows.
     combined = normalize_master_frame(pd.concat([*frames, fallback_krx, fallback_external, fallback_us], ignore_index=True))
     return combined
+
 

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 
@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from modules.market.ticker_search import search_tickers
+from modules.portfolio.calculator import infer_trading_currency
 from modules.portfolio.storage import delete_saved_portfolio, load_portfolio_json, load_portfolio_json_bytes, portfolio_to_json_bytes, save_portfolio_json
 from modules.portfolio.session_state import (
     add_holding,
@@ -24,12 +25,13 @@ class SearchResult:
     name: str
     ticker: str
     market: str
+    trading_currency: str
 
     @property
     def label(self) -> str:
         """Return the label shown in the search result selector."""
 
-        return f"{self.name} ({self.ticker})"
+        return f"{self.name} / {self.ticker} / {self.trading_currency}"
 
 
 K_PORTFOLIO_INPUT = "Portfolio Input"
@@ -63,7 +65,9 @@ def build_search_results(query: str) -> list[SearchResult]:
     data = search_tickers(clean_query, limit=30)
     results: list[SearchResult] = []
     for row in data.itertuples(index=False):
-        results.append(SearchResult(name=str(row.name), ticker=str(row.ticker), market=str(row.market)))
+        market = str(row.market)
+        ticker = str(row.ticker)
+        results.append(SearchResult(name=str(row.name), ticker=ticker, market=market, trading_currency=infer_trading_currency(ticker, market)))
     return results
 
 
@@ -145,9 +149,12 @@ def render_portfolio_input(sample_df: pd.DataFrame) -> pd.DataFrame:
         selected_label = st.selectbox(K_SEARCH_RESULT, labels, key="portfolio_search_result")
         selected_result = results[labels.index(selected_label)]
 
+    selected_currency = selected_result.trading_currency if selected_result else "KRW"
+    if selected_result:
+        st.caption(f"선택 종목: {selected_result.name} / {selected_result.ticker} / {selected_currency}")
     col_qty, col_price, col_add = st.columns([0.22, 0.28, 0.5], vertical_alignment="bottom")
     quantity = col_qty.number_input(K_QUANTITY, min_value=0.0, value=1.0, step=1.0, key="portfolio_add_quantity")
-    avg_price = col_price.number_input(K_AVERAGE_PRICE, min_value=0.0, value=0.0, step=100.0, key="portfolio_add_avg_price")
+    avg_price = col_price.number_input(f"{K_AVERAGE_PRICE}({selected_currency})", min_value=0.0, value=0.0, step=100.0 if selected_currency == "KRW" else 1.0, key="portfolio_add_avg_price")
     if col_add.button(K_ADD, width="stretch", disabled=selected_result is None, key="portfolio_add_button"):
         if selected_result is None:
             st.warning(K_NO_RESULTS)
@@ -247,3 +254,4 @@ def render_portfolio_positions(positions: pd.DataFrame) -> None:
         st.info("Enter at least one valid portfolio row to calculate the dashboard.")
         return
     st.dataframe(positions[display_columns], width="stretch", hide_index=True)
+

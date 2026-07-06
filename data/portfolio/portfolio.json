@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "holdings": [
+    {
+      "name": "SK하이닉스",
+      "ticker": "000660",
+      "quantity": 1.0,
+      "avg_price": 2354000.0
+    },
+    {
+      "name": "Apple Inc.",
+      "ticker": "AAPL",
+      "quantity": 2.0,
+      "avg_price": 305.75
+    },
+    {
+      "name": "AMZN",
+      "ticker": "AMZN",
+      "quantity": 2.0,
+      "avg_price": 244.03
+    },
+    {
+      "name": "Broadcom Inc.",
+      "ticker": "AVGO",
+      "quantity": 1.0,
+      "avg_price": 365.26
+    },
+    {
+      "name": "NVIDIA Corp.",
+      "ticker": "NVDA",
+      "quantity": 1.0,
+      "avg_price": 195.78
+    },
+    {
+      "name": "Tesla Inc.",
+      "ticker": "TSLA",
+      "quantity": 2.0,
+      "avg_price": 397.41
+    },
+    {
+      "name": "ACE 미국S&P500",
+      "ticker": "360200",
+      "quantity": 124.0,
+      "avg_price": 28861.0
+    },
+    {
+      "name": "TIGER 미국나스닥100",
+      "ticker": "133690",
+      "quantity": 11.0,
+      "avg_price": 200000.0
+    }
+  ]
+}
