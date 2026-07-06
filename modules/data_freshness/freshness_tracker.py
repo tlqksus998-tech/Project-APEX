@@ -48,15 +48,17 @@ def build_freshness_snapshot(
     fx_source: str = "manual",
     price_updated_at: datetime | None = None,
     analysis_run_at: datetime | None = None,
+    macro_updated_at: datetime | None = None,
 ) -> DataFreshnessSnapshot:
     """Build dashboard freshness metadata from known runtime/cache timestamps."""
 
     current = now_kst()
     krx_updated_at = file_mtime(get_cache_path("krx_master"))
     return DataFreshnessSnapshot(
-        data_updated_at=price_updated_at or analysis_run_at or current,
+        data_updated_at=price_updated_at or macro_updated_at or analysis_run_at or current,
         price_updated_at=price_updated_at,
         fx_updated_at=fx_updated_at,
+        macro_updated_at=macro_updated_at,
         krx_master_updated_at=krx_updated_at,
         analysis_run_at=analysis_run_at,
         fx_rate=float(fx_rate or 1380.0),

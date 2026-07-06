@@ -43,3 +43,4 @@ def format_analysis_time(snapshot: DataFreshnessSnapshot) -> str:
     if snapshot.analysis_run_at is None:
         return "실행 전"
     return snapshot.analysis_run_at.strftime("%H:%M 실행")
+

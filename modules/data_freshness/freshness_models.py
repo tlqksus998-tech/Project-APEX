@@ -11,6 +11,7 @@ class DataFreshnessSnapshot:
     data_updated_at: datetime
     price_updated_at: datetime | None = None
     fx_updated_at: datetime | None = None
+    macro_updated_at: datetime | None = None
     krx_master_updated_at: datetime | None = None
     analysis_run_at: datetime | None = None
     fx_rate: float = 1380.0
