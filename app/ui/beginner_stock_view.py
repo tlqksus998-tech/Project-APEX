@@ -52,6 +52,16 @@ def render_beginner_stock_result(selected: SearchResult, detail: dict[str, objec
 
     analysis = detail["analysis"]
     decision = detail["decision"]
+    unified = detail.get("unified")
+    if decision is None or analysis is None:
+        st.warning("실제 시장 데이터를 충분히 확인하지 못해 AI 점수와 판단을 제공하지 않습니다. 데이터를 다시 조회한 뒤 확인해 주세요.")
+        if unified is not None:
+            st.caption(
+                f"데이터 기준: {getattr(unified, 'data_timestamp', '확인 불가')} / "
+                f"최근 조회: {getattr(unified, 'query_timestamp', '확인 불가')} / "
+                f"상태: {getattr(unified, 'freshness_status', 'unknown')}"
+            )
+        return
     decision_dict = decision.__dict__ | {"decision": decision.decision.value, "final_decision": decision.final_decision}
     analysis_dict = analysis.__dict__
     score = optional_float(decision_dict.get("final_score")) or 45.0

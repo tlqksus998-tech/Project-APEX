@@ -7,15 +7,11 @@ from app.ui.checklist_view import render_analysis_checklist
 from app.ui.design_system import badge, section_title
 from app.ui.indicator_visuals import render_rsi_gauge
 from app.ui.portfolio_view import SearchResult, build_search_results
-from modules.ai_judgement import AIJudgementSummary, build_ai_judgement_summary
-from modules.analysis.analysis_engine import analyze_ohlcv
+from modules.ai_judgement import AIJudgementSummary
 from modules.analysis.checklist import build_analysis_checklist
-from modules.config import get_config
-from modules.decision.decision_engine import decide_one
-from modules.market.market_models import MarketDataRequest, PriceData
-from modules.market.ohlcv_provider import get_ohlcv
-from modules.market.price_provider import get_current_price
+from modules.market.market_models import PriceData
 from modules.portfolio.session_state import add_holding
+from modules.ranking import get_unified_ai_judgement
 from modules.utils import format_currency
 
 
@@ -68,19 +64,19 @@ def select_search_result(results: list[SearchResult]) -> SearchResult | None:
 def analyze_selected_stock(selected: SearchResult) -> dict[str, object]:
     """Run price, OHLCV, analysis, decision, checklist, and AI summary for one selected stock."""
 
-    config = get_config()
-    price = get_current_price(selected.ticker, config, market_hint=selected.market)
-    ohlcv = get_ohlcv(MarketDataRequest(ticker=selected.ticker, period="6mo", interval="1d", market_hint=selected.market), config)
-    analysis = analyze_ohlcv(selected.ticker, ohlcv.data)
-    decision = decide_one(analysis.__dict__)
-    decision_dict = decision.__dict__ | {
-        "decision": decision.decision.value,
-        "final_decision": decision.final_decision,
-        "stock_signal": decision.stock_signal,
-    }
-    summary = build_ai_judgement_summary(selected.name, selected.ticker, analysis.__dict__, decision_dict)
+    unified = get_unified_ai_judgement(selected.name, selected.ticker, selected.market)
+    price = unified.price
+    ohlcv = unified.ohlcv
+    analysis = unified.analysis
+    decision = unified.decision
+    summary = unified.summary
+    if not unified.is_decision_allowed or decision is None or summary is None:
+        return {"price": price, "ohlcv": ohlcv, "analysis": analysis, "decision": None, "summary": None, "checklist": None, "unified": unified}
+    if price is None or ohlcv is None or analysis is None:
+        return {"price": price, "ohlcv": ohlcv, "analysis": analysis, "decision": None, "summary": None, "checklist": None, "unified": unified}
+    decision_dict = decision.__dict__ | {"decision": decision.decision.value, "final_decision": decision.final_decision, "stock_signal": decision.stock_signal}
     checklist = build_analysis_checklist(analysis.__dict__, decision_dict)
-    return {"price": price, "ohlcv": ohlcv, "analysis": analysis, "decision": decision, "summary": summary, "checklist": checklist}
+    return {"price": price, "ohlcv": ohlcv, "analysis": analysis, "decision": decision, "summary": summary, "checklist": checklist, "unified": unified}
 
 
 def render_stock_detail(selected: SearchResult, detail: dict[str, object], beginner_mode: bool = True) -> None:
@@ -91,6 +87,12 @@ def render_stock_detail(selected: SearchResult, detail: dict[str, object], begin
     decision = detail["decision"]
     summary: AIJudgementSummary = detail["summary"]  # type: ignore[assignment]
     checklist = detail["checklist"]
+    unified = detail.get("unified")
+
+    render_data_quality_status(unified)
+    if decision is None or summary is None:
+        st.warning("실제 시장 데이터를 충분히 확인하지 못해 AI 판단과 점수를 제공하지 않습니다. 데이터를 다시 조회한 뒤 확인해 주세요.")
+        return
 
     st.markdown(f"### {selected.name} ({selected.ticker})")
     render_top_decision_card(selected, price, decision, summary)
@@ -104,6 +106,26 @@ def render_stock_detail(selected: SearchResult, detail: dict[str, object], begin
 
     if not price.success or not detail["ohlcv"].success:
         st.caption("일부 데이터는 조회 실패로 fallback 값을 사용했습니다. 티커를 확인하거나 잠시 후 다시 시도하세요.")
+
+
+def render_data_quality_status(unified: object | None) -> None:
+    """Render data freshness and quality status for stock detail pages."""
+
+    if unified is None:
+        return
+    status = getattr(unified, "freshness_status", "unknown")
+    readiness = getattr(unified, "readiness_level", "UNKNOWN")
+    data_timestamp = getattr(unified, "data_timestamp", "확인 불가")
+    query_timestamp = getattr(unified, "query_timestamp", "확인 불가")
+    source = getattr(unified, "source", "unknown")
+    warning = getattr(unified, "data_warning_message", "")
+    allowed = bool(getattr(unified, "is_decision_allowed", False))
+    label = "정상" if allowed and readiness == "READY" else ("주의" if allowed else "판단 제한")
+    with st.container(border=True):
+        st.markdown(f"**데이터 상태: {label}**")
+        st.caption(f"데이터 기준: {data_timestamp} / 최근 조회: {query_timestamp} / 상태: {readiness}({status}) / 출처: {source}")
+        if warning:
+            st.caption(str(warning))
 
 
 def render_top_decision_card(selected: SearchResult, price: PriceData, decision: object, summary: AIJudgementSummary) -> None:
