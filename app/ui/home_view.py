@@ -36,7 +36,8 @@ from modules.screening import screen_today_candidates
 from modules.summary import generate_portfolio_summary
 
 K_INPUT_TITLE = "포트폴리오 입력/수정"
-K_LOADING = "시장 데이터와 리스크를 분석하는 중입니다..."
+K_LOADING = "시장 데이터를 조회하고 분석하는 중입니다..."
+K_EMPTY_ACTION_GUIDE = "보유종목이 없어 오늘의 포트폴리오 행동 가이드를 생성할 수 없습니다. 먼저 보유종목을 추가해 주세요."
 
 
 def render_home_page(context: PageContext) -> None:
@@ -109,6 +110,7 @@ def render_empty_home(context: PageContext) -> None:
     render_onboarding(context.user_mode)
     render_freshness_sidebar(context.freshness)
     render_empty_state()
+    st.info(K_EMPTY_ACTION_GUIDE)
     render_quick_links()
     with st.expander(K_INPUT_TITLE, expanded=True):
         edited_portfolio = render_portfolio_input(get_sample_portfolio())

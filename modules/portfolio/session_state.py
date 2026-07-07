@@ -4,9 +4,14 @@ import pandas as pd
 import streamlit as st
 
 from modules.portfolio.input_data import PORTFOLIO_COLUMNS, normalize_portfolio
-from modules.portfolio.storage import load_portfolio_json
 
 PORTFOLIO_STATE_KEY = "portfolio_df"
+LEGACY_PORTFOLIO_STATE_KEY = "portfolio"
+KRW_CASH_STATE_KEY = "krw_cash"
+USD_CASH_STATE_KEY = "usd_cash"
+FX_RATE_STATE_KEY = "fx_rate"
+SELECTED_TICKER_STATE_KEY = "selected_ticker"
+SELECTED_ANALYSIS_TICKER_STATE_KEY = "selected_analysis_ticker"
 
 
 def empty_portfolio() -> pd.DataFrame:
@@ -15,20 +20,37 @@ def empty_portfolio() -> pd.DataFrame:
     return pd.DataFrame(columns=PORTFOLIO_COLUMNS)
 
 
-def initialize_portfolio_state(sample_df: pd.DataFrame | None = None) -> None:
-    """Initialize Streamlit portfolio state once per browser session, loading saved JSON when available."""
+def initialize_runtime_defaults() -> None:
+    """Set first-run defaults without injecting sample holdings."""
 
+    st.session_state.setdefault(LEGACY_PORTFOLIO_STATE_KEY, [])
+    st.session_state.setdefault(KRW_CASH_STATE_KEY, 0.0)
+    st.session_state.setdefault(USD_CASH_STATE_KEY, 0.0)
+    st.session_state.setdefault(FX_RATE_STATE_KEY, 1380.0)
+    st.session_state.setdefault(SELECTED_TICKER_STATE_KEY, None)
+    st.session_state.setdefault(SELECTED_ANALYSIS_TICKER_STATE_KEY, None)
+
+
+def sync_legacy_portfolio_state(portfolio: pd.DataFrame | None) -> None:
+    """Mirror the DataFrame portfolio to the legacy list-based state key."""
+
+    cleaned = normalize_portfolio(portfolio)
+    st.session_state[LEGACY_PORTFOLIO_STATE_KEY] = cleaned.to_dict(orient="records")
+
+
+def initialize_portfolio_state(sample_df: pd.DataFrame | None = None) -> None:
+    """Initialize Streamlit portfolio state once per browser session without sample injection."""
+
+    initialize_runtime_defaults()
     if PORTFOLIO_STATE_KEY in st.session_state:
         return
-    saved, error = load_portfolio_json()
-    if not saved.empty:
-        st.session_state[PORTFOLIO_STATE_KEY] = saved
-        st.session_state.setdefault("portfolio_storage_notice", "Saved portfolio loaded.")
+    legacy_value = st.session_state.get(LEGACY_PORTFOLIO_STATE_KEY)
+    if isinstance(legacy_value, list) and legacy_value:
+        st.session_state[PORTFOLIO_STATE_KEY] = normalize_portfolio(pd.DataFrame(legacy_value))
+        sync_legacy_portfolio_state(st.session_state[PORTFOLIO_STATE_KEY])
         return
-    initial = empty_portfolio() if sample_df is None else normalize_portfolio(sample_df).head(0)
-    st.session_state[PORTFOLIO_STATE_KEY] = initial
-    if error and "No saved portfolio" not in error:
-        st.session_state.setdefault("portfolio_storage_notice", error)
+    st.session_state[PORTFOLIO_STATE_KEY] = empty_portfolio()
+    sync_legacy_portfolio_state(st.session_state[PORTFOLIO_STATE_KEY])
 
 
 def get_portfolio_state() -> pd.DataFrame:
@@ -43,7 +65,9 @@ def get_portfolio_state() -> pd.DataFrame:
 def set_portfolio_state(portfolio: pd.DataFrame | None) -> None:
     """Store a normalized portfolio DataFrame in Streamlit session state."""
 
-    st.session_state[PORTFOLIO_STATE_KEY] = normalize_portfolio(portfolio)
+    cleaned = normalize_portfolio(portfolio)
+    st.session_state[PORTFOLIO_STATE_KEY] = cleaned
+    sync_legacy_portfolio_state(cleaned)
 
 
 def add_holding(name: str, ticker: str, quantity: float, avg_price: float) -> tuple[bool, str]:

@@ -70,8 +70,26 @@ def render_cash_inputs() -> CashPosition:
 
     st.sidebar.divider()
     st.sidebar.subheader("Cash / Currency")
-    krw_cash = float(st.sidebar.number_input("KRW Cash", min_value=0.0, value=0.0, step=10000.0))
-    usd_cash = float(st.sidebar.number_input("USD Cash", min_value=0.0, value=0.0, step=100.0))
+    krw_cash = float(
+        st.sidebar.number_input(
+            "KRW Cash",
+            min_value=0.0,
+            value=float(st.session_state.get("krw_cash", 0.0)),
+            step=10000.0,
+            key="sidebar_krw_cash",
+        )
+    )
+    usd_cash = float(
+        st.sidebar.number_input(
+            "USD Cash",
+            min_value=0.0,
+            value=float(st.session_state.get("usd_cash", 0.0)),
+            step=100.0,
+            key="sidebar_usd_cash",
+        )
+    )
+    st.session_state["krw_cash"] = krw_cash
+    st.session_state["usd_cash"] = usd_cash
     if "fx_rate" not in st.session_state:
         st.session_state["fx_rate"] = 1380.0
     if st.sidebar.button("환율 최신화", width="stretch", key="refresh_fx_rate", type="primary"):

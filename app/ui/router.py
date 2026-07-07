@@ -52,7 +52,7 @@ def render_stock_analysis_page(context: PageContext) -> None:
     render_disclaimer(context.beginner_mode)
     render_freshness_bar(context.freshness)
     default_query = str(st.session_state.get("selected_analysis_ticker", ""))
-    render_stock_analysis_view(default_query=default_query)
+    render_stock_analysis_view(default_query=default_query, beginner_mode=context.beginner_mode)
     render_freshness_sidebar(context.freshness)
 
 

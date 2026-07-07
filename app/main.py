@@ -17,7 +17,6 @@ from app.ui.sidebar import render_cash_inputs, render_market_controls, render_si
 from modules.data_freshness import build_freshness_snapshot
 from modules.market.macro_provider import build_macro_brief
 from modules.market.sentiment_provider import get_fear_greed_placeholder
-from modules.portfolio.input_data import get_sample_portfolio
 from modules.portfolio.session_state import initialize_portfolio_state
 
 K_PAGE_TITLE = "오늘의 투자판단"
@@ -28,7 +27,7 @@ def init_app() -> None:
 
     st.set_page_config(page_title=K_PAGE_TITLE, layout="wide")
     load_theme()
-    initialize_portfolio_state(get_sample_portfolio())
+    initialize_portfolio_state()
 
 
 def build_page_context() -> PageContext:

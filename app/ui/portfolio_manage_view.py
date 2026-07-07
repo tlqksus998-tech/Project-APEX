@@ -12,7 +12,7 @@ from modules.dashboard import run_dashboard_engines
 from modules.portfolio.input_data import get_sample_portfolio, validate_portfolio
 from modules.portfolio.session_state import get_portfolio_state
 
-K_LOADING = "시장 데이터와 리스크를 분석하는 중입니다..."
+K_LOADING = "시장 데이터를 조회하고 분석하는 중입니다..."
 
 
 def render_portfolio_manage_page(context: PageContext) -> None:
