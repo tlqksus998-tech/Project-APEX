@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import pandas as pd
 import streamlit as st
 
+from app.ui.design_system import section_title
 from modules.market.ticker_search import search_tickers
 from modules.portfolio.calculator import infer_trading_currency
 from modules.portfolio.storage import delete_saved_portfolio, load_portfolio_json, load_portfolio_json_bytes, portfolio_to_json_bytes, save_portfolio_json
@@ -34,22 +35,22 @@ class SearchResult:
         return f"{self.name} / {self.ticker} / {self.trading_currency}"
 
 
-K_PORTFOLIO_INPUT = "Portfolio Input"
+K_PORTFOLIO_INPUT = "포트폴리오 입력/수정"
 K_SEARCH = "\uc885\ubaa9 \uac80\uc0c9"
 K_SEARCH_PLACEHOLDER = "\uc0bc\uc131, SK\ud558\uc774\ub2c9\uc2a4, TIGER, SOXL, NVIDIA, MU"
 K_SEARCH_RESULT = "\uac80\uc0c9 \uacb0\uacfc \uc120\ud0dd"
 K_RESULT_COUNT = "\uac80\uc0c9 \uacb0\uacfc"
 K_QUANTITY = "\ubcf4\uc720\uc218\ub7c9"
 K_AVERAGE_PRICE = "\ud3c9\uade0\ub2e8\uac00"
-K_ADD = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624\uc5d0 \ucd94\uac00"
+K_ADD = "포트폴리오에 추가"
 K_CURRENT = "\ud604\uc7ac \ud3ec\ud2b8\ud3f4\ub9ac\uc624"
 K_DELETE = "\uc885\ubaa9 \uc0ad\uc81c"
 K_DELETE_SELECT = "\uc0ad\uc81c\ud560 \uc885\ubaa9"
 K_NO_RESULTS = "\uac80\uc0c9 \uacb0\uacfc\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. \uc885\ubaa9\uba85\uc774\ub098 \ud2f0\ucee4\ub97c \ud655\uc778\ud574\uc8fc\uc138\uc694."
 K_EMPTY = "\uc544\uc9c1 \ud3ec\ud2b8\ud3f4\ub9ac\uc624\uac00 \uc5c6\uc2b5\ub2c8\ub2e4. \uc885\ubaa9\uc744 \uac80\uc0c9\ud574 \ucd94\uac00\ud574\ubcf4\uc138\uc694."
 K_LOAD_SAMPLE = "\uc0d8\ud50c \ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ubd88\ub7ec\uc624\uae30"
-K_SAVE = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \uc800\uc7a5"
-K_LOAD = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ubd88\ub7ec\uc624\uae30"
+K_SAVE = "JSON 저장"
+K_LOAD = "JSON 불러오기"
 K_RESET = "\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ucd08\uae30\ud654"
 K_DOWNLOAD = "JSON \ub2e4\uc6b4\ub85c\ub4dc"
 K_UPLOAD = "JSON \uc5c5\ub85c\ub4dc"
@@ -132,11 +133,12 @@ def render_portfolio_input(sample_df: pd.DataFrame) -> pd.DataFrame:
     """Render search-first portfolio input backed by Streamlit session state."""
 
     initialize_portfolio_state(sample_df)
-    st.subheader(K_PORTFOLIO_INPUT)
+    section_title(K_PORTFOLIO_INPUT, "종목 검색 후 수량과 평균단가를 입력하면 바로 분석에 반영됩니다.")
     if st.session_state.pop("portfolio_flash", None):
         st.success("\ud3ec\ud2b8\ud3f4\ub9ac\uc624\uac00 \uac31\uc2e0\ub418\uc5c8\uc2b5\ub2c8\ub2e4.")
     render_portfolio_storage_controls()
 
+    st.markdown("**1. 종목 검색**")
     query = st.text_input(K_SEARCH, placeholder=K_SEARCH_PLACEHOLDER, key="portfolio_search_query")
     results = build_search_results(query)
     selected_result: SearchResult | None = None
@@ -152,10 +154,11 @@ def render_portfolio_input(sample_df: pd.DataFrame) -> pd.DataFrame:
     selected_currency = selected_result.trading_currency if selected_result else "KRW"
     if selected_result:
         st.caption(f"선택 종목: {selected_result.name} / {selected_result.ticker} / {selected_currency}")
-    col_qty, col_price, col_add = st.columns([0.22, 0.28, 0.5], vertical_alignment="bottom")
+    st.markdown("**2. 수량과 평균단가 입력**")
+    col_qty, col_price, col_add = st.columns([0.24, 0.30, 0.46], vertical_alignment="bottom")
     quantity = col_qty.number_input(K_QUANTITY, min_value=0.0, value=1.0, step=1.0, key="portfolio_add_quantity")
     avg_price = col_price.number_input(f"{K_AVERAGE_PRICE}({selected_currency})", min_value=0.0, value=0.0, step=100.0 if selected_currency == "KRW" else 1.0, key="portfolio_add_avg_price")
-    if col_add.button(K_ADD, width="stretch", disabled=selected_result is None, key="portfolio_add_button"):
+    if col_add.button(K_ADD, width="stretch", disabled=selected_result is None, key="portfolio_add_button", type="primary"):
         if selected_result is None:
             st.warning(K_NO_RESULTS)
         else:
@@ -167,7 +170,7 @@ def render_portfolio_input(sample_df: pd.DataFrame) -> pd.DataFrame:
                 st.warning(message)
 
     portfolio = get_portfolio_state()
-    st.markdown(f"**{K_CURRENT}**")
+    st.markdown(f"**3. {K_CURRENT}**")
     if portfolio.empty:
         st.info(K_EMPTY)
         if st.button(K_LOAD_SAMPLE, width="stretch", key="portfolio_load_sample"):
@@ -254,4 +257,5 @@ def render_portfolio_positions(positions: pd.DataFrame) -> None:
         st.info("Enter at least one valid portfolio row to calculate the dashboard.")
         return
     st.dataframe(positions[display_columns], width="stretch", hide_index=True)
+
 

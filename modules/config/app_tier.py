@@ -1,38 +1,39 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from modules.config.feature_flags import get_feature_value
+from modules.settings import paid_plan_limit_enabled
 
-APP_TIER = "FREE"
-SUPPORTED_TIERS = {"FREE", "PRO", "PREMIUM"}
+APP_TIER = "STANDARD"
 
 
 def get_app_tier() -> str:
     """Return the current app tier."""
 
-    tier = str(APP_TIER or "FREE").upper()
-    return tier if tier in SUPPORTED_TIERS else "FREE"
+    return APP_TIER
 
 
 def is_free() -> bool:
-    """Return True when the app runs in Free mode."""
+    """Return whether legacy free-mode limits are active."""
 
-    return get_app_tier() == "FREE"
+    return False
 
 
 def is_pro() -> bool:
-    """Return True when the app runs in Pro mode."""
+    """Return whether legacy pro-mode limits are active."""
 
-    return get_app_tier() == "PRO"
+    return False
 
 
 def is_premium() -> bool:
-    """Return True when the app runs in Premium mode."""
+    """Return whether legacy premium-mode limits are active."""
 
-    return get_app_tier() == "PREMIUM"
+    return False
 
 
 def can_use_feature(feature_name: str) -> bool:
     """Return whether a feature is enabled for the current app tier."""
 
+    if not paid_plan_limit_enabled():
+        return True
     value = get_feature_value(feature_name, get_app_tier())
     return bool(value is True or value == "unlimited")

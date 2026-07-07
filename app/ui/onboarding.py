@@ -1,7 +1,8 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import streamlit as st
 
+from app.ui.design_system import section_title
 from modules.portfolio.input_data import get_sample_portfolio
 from modules.portfolio.session_state import set_portfolio_state
 
@@ -25,14 +26,14 @@ def render_onboarding(mode: str) -> None:
         return
 
     with st.container(border=True):
-        st.subheader(K_GUIDE_TITLE)
+        section_title(K_GUIDE_TITLE, "먼저 보유종목을 추가해보세요. 3분 안에 첫 분석을 볼 수 있습니다.")
         st.write(K_GUIDE_BODY)
         st.markdown("1. **\uc885\ubaa9 \uac80\uc0c9**: \uc0bc\uc131\uc804\uc790, KORU, \ub9c8\uc774\ud06c\ub860\ucc98\ub7fc \uc785\ub825\ud569\ub2c8\ub2e4.")
         st.markdown("2. **\uc218\ub7c9/\ud3c9\ub2e8 \uc785\ub825**: \ud3c9\ub2e8\uc744 \ubaa8\ub974\uba74 0\uc73c\ub85c \ub450\uace0 \uc2dc\uc791\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.")
         st.markdown("3. **\ud3ec\ud2b8\ud3f4\ub9ac\uc624 \ucd94\uac00**: \ucd94\uac00\ud558\uba74 \ubd84\uc11d\uc774 \uc790\ub3d9 \uac31\uc2e0\ub429\ub2c8\ub2e4.")
         st.markdown("4. **\uc624\ub298\uc758 \ud22c\uc790\ud310\ub2e8 \ud655\uc778**: Decision\uacfc \uc624\ub298 \ud574\uc57c \ud560 \ud589\ub3d9\uc744 \uba3c\uc800 \ubd05\ub2c8\ub2e4.")
         col1, col2 = st.columns(2)
-        if col1.button(K_LOAD_SAMPLE, width="stretch", key="onboarding_load_sample"):
+        if col1.button(K_LOAD_SAMPLE, width="stretch", key="onboarding_load_sample", type="primary"):
             load_sample_portfolio()
             st.rerun()
         if col2.button(K_DIRECT, width="stretch", key="onboarding_direct_input"):
@@ -44,7 +45,11 @@ def render_empty_state() -> None:
     """Render a simple empty state for users with no holdings."""
 
     with st.container(border=True):
-        st.info(K_EMPTY)
+        st.info("먼저 보유종목을 추가해보세요. 샘플로 시작하거나 아래 입력 영역에서 직접 추가할 수 있습니다.")
+        if st.button("포트폴리오 추가하기", width="stretch", key="empty_focus_input", type="primary"):
+            st.session_state["focus_portfolio_input"] = True
+            st.rerun()
         if st.button(K_LOAD_SAMPLE, width="stretch", key="empty_load_sample"):
             load_sample_portfolio()
             st.rerun()
+

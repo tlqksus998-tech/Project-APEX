@@ -3,9 +3,7 @@
 import pandas as pd
 import streamlit as st
 
-from app.ui.pro_gate_view import render_pro_locked_card
-from modules.config.app_tier import get_app_tier
-from modules.config.feature_flags import get_feature_value, is_unlimited
+from app.ui.design_system import badge, section_title
 
 K_TITLE = "오늘의 관심 후보"
 K_NOTICE = "오늘의 관심 후보는 바로 매수하라는 의미가 아닙니다. 시장 상황, 종목 흐름, 포트폴리오 비중을 함께 확인하기 위한 검토 대상입니다."
@@ -21,20 +19,10 @@ def render_candidate_stocks(candidates: pd.DataFrame) -> None:
         st.info(K_EMPTY)
         return
 
-    tier = get_app_tier()
-    limit = get_feature_value("watchlist_limit", tier)
-    visible_count = len(candidates) if is_unlimited(limit) else min(int(limit), len(candidates))
-    visible = candidates.head(visible_count).reset_index(drop=True)
+    visible = candidates.reset_index(drop=True)
 
     for _, row in visible.iterrows():
-        render_candidate_card(row, show_full_reasons=bool(get_feature_value("pro_candidate_reason", tier)))
-
-    hidden_count = max(0, len(candidates) - visible_count)
-    if hidden_count > 0:
-        render_pro_locked_card(
-            "Pro 관심 후보",
-            f"무료버전에서는 오늘의 관심 후보를 최대 {visible_count}개까지 표시합니다. {hidden_count}개 후보의 상세 검토는 Pro에서 제공됩니다.",
-        )
+        render_candidate_card(row, show_full_reasons=True)
 
 
 def render_candidate_card(row: pd.Series, show_full_reasons: bool = False) -> None:
@@ -51,13 +39,12 @@ def render_candidate_card(row: pd.Series, show_full_reasons: bool = False) -> No
         col_title, col_status = st.columns([0.68, 0.32], vertical_alignment="center")
         col_title.markdown(f"### {name}")
         col_title.caption(ticker)
-        col_status.metric("상태", status)
+        col_status.markdown(badge(status), unsafe_allow_html=True)
+        col_status.caption("상태")
         st.write(beginner_explanation(status))
         st.markdown("**핵심 이유**")
         for reason in shown_reasons:
             st.write(f"- {reason}")
-        if not show_full_reasons:
-            st.caption("상세 사유와 포트폴리오 기반 승인/보류 판단은 Pro에서 제공됩니다.")
         st.warning("주의사항: 관심 후보는 매수 지시가 아닙니다. 현금비중, 손실 위험, 기존 보유 비중을 함께 확인하세요.")
 
 
@@ -109,3 +96,4 @@ def format_reasons(value: object) -> str:
     """Backward-compatible reason formatter."""
 
     return " | ".join(normalize_reasons(value)[:3])
+

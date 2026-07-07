@@ -245,7 +245,7 @@ def load_master_database() -> pd.DataFrame:
     fallback_krx = load_krx_master_from_source()
     fallback_external = load_external_fallback_master()
     fallback_us = normalize_master_frame(pd.DataFrame(FALLBACK_US))
-    # Put fallback rows last so alias/search_text upgrades override old cache rows.
+    # Put fallback rows last so alias/search_text values refresh old cache rows.
     combined = normalize_master_frame(pd.concat([*frames, fallback_krx, fallback_external, fallback_us], ignore_index=True))
     return combined
 

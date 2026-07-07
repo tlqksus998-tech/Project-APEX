@@ -14,8 +14,10 @@ import streamlit as st
 from app.ui.brand_header import render_brand_header
 from app.ui.candidate_view import render_candidate_stocks
 from app.ui.chart_view import render_macro_mini_charts
+from app.ui.design_system import load_theme
 from app.ui.freshness_view import render_freshness_bar, render_freshness_sidebar
 from app.ui.help_text import render_terms_help
+from app.ui.kpi_view import render_kpi_summary
 from app.ui.macro_view import render_fear_greed_placeholder, render_macro_market_cards, render_morning_brief
 from app.ui.news_view import render_market_issues_placeholder
 from app.ui.onboarding import render_empty_state, render_onboarding
@@ -87,6 +89,7 @@ def main() -> None:
     """Run the Project APEX Today Dashboard."""
 
     st.set_page_config(page_title=K_PAGE_TITLE, layout="wide")
+    load_theme()
     initialize_portfolio_state(get_sample_portfolio())
 
     selected_menu = render_sidebar()
@@ -188,6 +191,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
 
 

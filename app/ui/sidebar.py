@@ -2,7 +2,6 @@
 
 import streamlit as st
 
-from modules.config.app_tier import get_app_tier, is_free
 from modules.config.version import APP_NAME, APP_VERSION, BUILD_DATE, BUILD_NAME
 from modules.market.fx_provider import get_usdkrw_rate
 from modules.portfolio_engine import CashPosition
@@ -20,6 +19,7 @@ def render_sidebar() -> str:
     """Render the main sidebar navigation and return the selected menu."""
 
     st.sidebar.title("Project APEX")
+    st.sidebar.caption("AI Portfolio Expert")
     return st.sidebar.radio("Menu", MENU_ITEMS, index=0)
 
 
@@ -54,7 +54,7 @@ def render_market_controls() -> tuple[str, str]:
     """Render market data controls and return period and interval."""
 
     st.sidebar.divider()
-    st.sidebar.subheader("Market")
+    st.sidebar.subheader("Market Controls")
     render_market_refresh()
     period = st.sidebar.selectbox("History Period", ["1mo", "3mo", "6mo", "1y"], index=2)
     interval = st.sidebar.selectbox("Interval", ["1d", "1wk"], index=0)
@@ -70,7 +70,7 @@ def render_cash_inputs() -> CashPosition:
     usd_cash = float(st.sidebar.number_input("USD Cash", min_value=0.0, value=0.0, step=100.0))
     if "fx_rate" not in st.session_state:
         st.session_state["fx_rate"] = 1380.0
-    if st.sidebar.button("환율 최신화", width="stretch", key="refresh_fx_rate"):
+    if st.sidebar.button("환율 최신화", width="stretch", key="refresh_fx_rate", type="primary"):
         result = get_usdkrw_rate(float(st.session_state.get("fx_rate", 1380.0)))
         st.session_state["fx_rate"] = result.rate
         st.session_state["fx_updated_at"] = result.updated_at
@@ -93,12 +93,10 @@ def render_version_footer() -> None:
     """Render version footer in the sidebar."""
 
     st.sidebar.divider()
-    st.sidebar.caption(f"Current Plan: {get_app_tier()}")
-    if is_free():
-        st.sidebar.caption("Pro 기능 체험 준비 중")
     st.sidebar.caption(f"{APP_NAME} {APP_VERSION}")
     st.sidebar.caption(BUILD_NAME)
     st.sidebar.caption(f"Last Updated: {BUILD_DATE}")
+
 
 
 

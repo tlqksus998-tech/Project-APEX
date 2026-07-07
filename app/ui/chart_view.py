@@ -3,6 +3,8 @@
 import pandas as pd
 import streamlit as st
 
+from app.ui.design_system import section_title
+
 try:
     import plotly.express as px
 except Exception:  # pragma: no cover - cloud dependency fallback
@@ -15,7 +17,7 @@ from modules.market.macro_provider import CHART_INSTRUMENTS
 def render_macro_mini_charts(macro_data: MacroDashboard | dict[str, pd.DataFrame]) -> None:
     """Render mini charts for core macro instruments with range selection."""
 
-    st.subheader("주요 지표 차트")
+    section_title("주요 지표 차트", "1개월/6개월 흐름을 카드별로 비교합니다.")
     selected_range = st.segmented_control("Chart Range", ["1개월", "6개월"], default="1개월", key="macro_chart_range")
     chart_key = "6mo" if selected_range == "6개월" else "1mo"
     cols = st.columns(2)
@@ -56,3 +58,4 @@ def get_chart_history(macro_data: MacroDashboard | dict[str, pd.DataFrame], name
                 return indicator.chart_data.get(chart_key, pd.DataFrame())
         return pd.DataFrame()
     return macro_data.get(name, pd.DataFrame()) if macro_data else pd.DataFrame()
+

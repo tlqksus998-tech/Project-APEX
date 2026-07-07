@@ -6,6 +6,8 @@
     import app.ui.news_view
     import app.ui.candidate_view
     import app.ui.decision_view
+    import app.ui.design_system
+    import app.ui.kpi_view
     import app.ui.layout
     import app.ui.market_view
     import app.ui.portfolio_view
@@ -17,7 +19,9 @@
     assert app.ui.sidebar.MENU_ITEMS == ["Home", "Portfolio", "Market", "Analysis", "Decision", "Settings"]
     assert callable(app.ui.portfolio_view.build_search_results)
     assert callable(app.ui.news_view.render_market_issues_placeholder)
-    assert callable(app.ui.pro_gate_view.render_pro_locked_card)
+    assert callable(app.ui.pro_gate_view.render_disclaimer)
+    assert callable(app.ui.design_system.load_theme)
+    assert callable(app.ui.kpi_view.render_kpi_summary)
 
 
 def test_main_importable():
@@ -30,5 +34,6 @@ def test_portfolio_session_module_importable():
     import modules.portfolio.session_state as session_state
 
     assert session_state.PORTFOLIO_STATE_KEY == "portfolio_df"
+
 
 

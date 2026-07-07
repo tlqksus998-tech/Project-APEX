@@ -3,6 +3,7 @@
 import pandas as pd
 import streamlit as st
 
+from app.ui.design_system import badge, section_title
 from app.ui.help_text import help_for
 from modules.decision.decision_engine import map_decision
 from modules.scoring.confidence import portfolio_confidence
@@ -153,8 +154,8 @@ def build_today_actions(positions: pd.DataFrame, portfolio_risk: pd.DataFrame, s
 def render_action_card(actions: list[str]) -> None:
     """Render today's rule-based action card."""
 
+    section_title(K_ACTION_TITLE, "오늘 바로 확인할 행동만 짧게 정리했습니다.")
     with st.container(border=True):
-        st.subheader(K_ACTION_TITLE)
         for action in actions:
             st.write(action)
 
@@ -195,7 +196,7 @@ def build_dashboard_table(positions: pd.DataFrame, analysis_results: pd.DataFram
 def render_dashboard_table(table: pd.DataFrame, beginner_mode: bool = True) -> None:
     """Render the merged portfolio table with decision coloring."""
 
-    st.subheader(K_TABLE_TITLE)
+    section_title(K_TABLE_TITLE, "초보자 모드에서는 핵심 판단만, 고급자 모드에서는 상세 지표를 함께 봅니다.")
     if table.empty:
         st.info(K_NO_TABLE)
         return
@@ -225,7 +226,7 @@ def color_decision_cell(value: object) -> str:
 def render_portfolio_summary(positions: pd.DataFrame, metrics: dict[str, float], cash_amount: float) -> None:
     """Render portfolio summary metrics with KRW/USD normalized valuation."""
 
-    st.subheader("Portfolio Summary")
+    section_title("Portfolio Summary", "투자금, 평가금액, 현금비중을 KRW 환산 기준으로 정리합니다.")
     total_value = float(metrics.get("total_current_value", 0.0))
     cash_ratio = cash_amount / (cash_amount + total_value) if (cash_amount + total_value) > 0 else 0.0
     concentration = float(positions["weight"].max()) if not positions.empty else 0.0
@@ -255,7 +256,7 @@ def render_portfolio_summary(positions: pd.DataFrame, metrics: dict[str, float],
 def render_risk_alerts(portfolio_risk: pd.DataFrame) -> None:
     """Render High/Medium/Low risk alert card."""
 
-    st.subheader("Risk Alert")
+    section_title("Risk Alert", "High / Medium / Low 리스크를 빠르게 확인합니다.")
     if portfolio_risk.empty:
         st.info("\uc544\uc9c1 \ub9ac\uc2a4\ud06c \uc54c\ub9bc\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.")
         return
@@ -265,13 +266,18 @@ def render_risk_alerts(portfolio_risk: pd.DataFrame) -> None:
     medium = int(((penalties < 0) & (penalties > -30)).sum())
     low = int((penalties == 0).sum())
 
-    st.error(f"High Risk: {high}")
-    st.warning(f"Medium Risk: {medium}")
-    st.info(f"Low Risk: {low}")
+    cols = st.columns(3)
+    cols[0].markdown(badge("High Risk"), unsafe_allow_html=True)
+    cols[0].metric("High", high)
+    cols[1].markdown(badge("Medium Risk"), unsafe_allow_html=True)
+    cols[1].metric("Medium", medium)
+    cols[2].markdown(badge("Low Risk"), unsafe_allow_html=True)
+    cols[2].metric("Low", low)
 
     with st.expander("Risk messages", expanded=True):
         for _, row in portfolio_risk.iterrows():
             messages = row.get("risk_messages", [])
             if messages:
                 st.write(f"{row['ticker']}: " + " | ".join(messages))
+
 

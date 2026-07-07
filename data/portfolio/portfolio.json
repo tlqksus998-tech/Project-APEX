@@ -20,12 +20,6 @@
       "avg_price": 244.03
     },
     {
-      "name": "NVIDIA Corp.",
-      "ticker": "NVDA",
-      "quantity": 1.0,
-      "avg_price": 195.78
-    },
-    {
       "name": "Tesla Inc.",
       "ticker": "TSLA",
       "quantity": 2.0,
@@ -42,6 +36,30 @@
       "ticker": "133690",
       "quantity": 11.0,
       "avg_price": 200000.0
+    },
+    {
+      "name": "LG전자",
+      "ticker": "066570",
+      "quantity": 1.0,
+      "avg_price": 0.0
+    },
+    {
+      "name": "LG에너지솔루션",
+      "ticker": "373220",
+      "quantity": 1.0,
+      "avg_price": 0.0
+    },
+    {
+      "name": "삼성에피스홀딩스",
+      "ticker": "0126Z0",
+      "quantity": 1.0,
+      "avg_price": 0.0
+    },
+    {
+      "name": "현대차",
+      "ticker": "005380",
+      "quantity": 1.0,
+      "avg_price": 0.0
     }
   ]
 }

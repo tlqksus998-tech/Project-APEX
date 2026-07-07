@@ -1,0 +1,147 @@
+﻿:root {
+  --apex-navy: #0f172a;
+  --apex-slate: #334155;
+  --apex-blue: #2563eb;
+  --apex-emerald: #059669;
+  --apex-green: #16a34a;
+  --apex-amber: #d97706;
+  --apex-orange: #ea580c;
+  --apex-red: #dc2626;
+  --apex-bg: #f8fafc;
+  --apex-card: #ffffff;
+  --apex-border: #e2e8f0;
+  --apex-muted: #64748b;
+}
+
+.stApp {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 42%, #f8fafc 100%);
+  color: var(--apex-navy);
+}
+
+.block-container {
+  padding-top: 1.4rem;
+  padding-bottom: 3rem;
+  max-width: 1280px;
+}
+
+h1, h2, h3 {
+  letter-spacing: 0;
+  color: var(--apex-navy);
+}
+
+h1 { font-size: 34px !important; line-height: 1.15 !important; }
+h2 { font-size: 26px !important; }
+h3 { font-size: 21px !important; }
+p, li, label, div[data-testid="stMarkdownContainer"] { font-size: 16px; }
+small, .caption, div[data-testid="stCaptionContainer"] { font-size: 13.5px !important; color: var(--apex-muted) !important; }
+
+button, div[data-testid="stButton"] button, div[data-testid="stDownloadButton"] button {
+  min-height: 42px;
+  border-radius: 8px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input,
+div[data-testid="stSelectbox"] div,
+div[data-testid="stFileUploader"] section {
+  border-radius: 8px !important;
+  font-size: 15px !important;
+}
+
+div[data-testid="stMetric"] {
+  background: var(--apex-card);
+  border: 1px solid var(--apex-border);
+  border-radius: 8px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+div[data-testid="stMetricLabel"] p {
+  color: var(--apex-muted) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+div[data-testid="stMetricValue"] {
+  font-size: 28px !important;
+  color: var(--apex-navy) !important;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+  border-color: var(--apex-border) !important;
+  border-radius: 8px !important;
+  background: rgba(255,255,255,0.92) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.apex-hero {
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 26px 28px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 52%, #0f766e 100%);
+  color: #ffffff;
+  margin-bottom: 18px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+}
+.apex-hero h1, .apex-hero h2, .apex-hero p { color: #ffffff !important; margin: 0; }
+.apex-hero .subtitle { font-size: 18px; opacity: .92; margin-top: 8px; }
+.apex-hero .meta { font-size: 14px; opacity: .84; margin-top: 14px; }
+
+.apex-section-title {
+  margin: 24px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--apex-border);
+}
+.apex-section-title h2 { margin: 0; font-size: 22px !important; }
+.apex-section-title p { margin: 4px 0 0; color: var(--apex-muted); }
+
+.apex-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-weight: 800;
+  font-size: 12.5px;
+  border: 1px solid transparent;
+}
+.badge-positive { color: #166534; background: #dcfce7; border-color: #bbf7d0; }
+.badge-neutral { color: #92400e; background: #fef3c7; border-color: #fde68a; }
+.badge-warning { color: #9a3412; background: #ffedd5; border-color: #fed7aa; }
+.badge-negative { color: #991b1b; background: #fee2e2; border-color: #fecaca; }
+.badge-info { color: #1d4ed8; background: #dbeafe; border-color: #bfdbfe; }
+.badge-muted { color: #475569; background: #f1f5f9; border-color: #e2e8f0; }
+
+.apex-kpi-card {
+  border: 1px solid var(--apex-border);
+  border-radius: 8px;
+  padding: 16px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  min-height: 126px;
+}
+.apex-kpi-card .label { color: var(--apex-muted); font-weight: 800; font-size: 14px; }
+.apex-kpi-card .value { color: var(--apex-navy); font-size: 27px; font-weight: 900; margin-top: 8px; }
+.apex-kpi-card .sub { color: var(--apex-muted); font-size: 13.5px; margin-top: 8px; }
+.apex-kpi-card.positive { border-top: 4px solid var(--apex-green); }
+.apex-kpi-card.neutral { border-top: 4px solid var(--apex-amber); }
+.apex-kpi-card.warning { border-top: 4px solid var(--apex-orange); }
+.apex-kpi-card.negative { border-top: 4px solid var(--apex-red); }
+.apex-kpi-card.info { border-top: 4px solid var(--apex-blue); }
+
+[data-testid="stSidebar"] {
+  background: #f8fafc;
+  border-right: 1px solid var(--apex-border);
+}
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+  color: var(--apex-navy) !important;
+}
+
+@media (max-width: 760px) {
+  .block-container { padding-left: 1rem; padding-right: 1rem; }
+  .apex-hero { padding: 20px; }
+  h1 { font-size: 29px !important; }
+  div[data-testid="stMetricValue"] { font-size: 24px !important; }
+}
