@@ -131,6 +131,97 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 .apex-kpi-card.negative { border-top: 4px solid var(--apex-red); }
 .apex-kpi-card.info { border-top: 4px solid var(--apex-blue); }
 
+.apex-mascot-placeholder {
+  width: 72px;
+  min-height: 72px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--apex-border);
+  background: #f8fafc;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  margin: 0 auto;
+}
+
+.apex-mascot-placeholder.mascot-cabbage,
+.apex-mascot-placeholder.mascot-green {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.apex-mascot-placeholder.mascot-mushroom {
+  background: #f5f0e6;
+  border-color: #d6c4a9;
+  color: #6b4f2a;
+}
+
+.apex-mascot-placeholder.mascot-tofu_pouch,
+.apex-mascot-placeholder.mascot-beige {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.apex-mascot-placeholder.mascot-meat,
+.apex-mascot-placeholder.mascot-red {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.apex-mascot-face {
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.apex-mascot-mini-label {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.apex-mascot-bubble {
+  border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--apex-border);
+  background: #ffffff;
+}
+
+.apex-mascot-bubble strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: var(--apex-navy);
+}
+
+.apex-mascot-bubble p {
+  margin: 0;
+  color: var(--apex-slate);
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+
+.mascot-bubble-positive { border-left: 4px solid var(--apex-green); }
+.mascot-bubble-neutral { border-left: 4px solid var(--apex-amber); }
+.mascot-bubble-warning { border-left: 4px solid var(--apex-orange); }
+.mascot-bubble-negative { border-left: 4px solid var(--apex-red); }
+.mascot-bubble-info { border-left: 4px solid var(--apex-blue); }
+
+.apex-mascot-float {
+  animation: apexFloat 3.5s ease-in-out infinite;
+}
+
+@keyframes apexFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
+}
+
 [data-testid="stSidebar"] {
   background: #f8fafc;
   border-right: 1px solid var(--apex-border);

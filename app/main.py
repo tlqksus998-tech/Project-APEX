@@ -19,7 +19,7 @@ from modules.market.macro_provider import build_macro_brief
 from modules.market.sentiment_provider import get_fear_greed_placeholder
 from modules.portfolio.session_state import initialize_portfolio_state
 
-K_PAGE_TITLE = "오늘의 투자판단"
+K_PAGE_TITLE = "Project APEX"
 
 
 def init_app() -> None:

@@ -10,14 +10,14 @@ def get_rsi_label(rsi_value: float | None) -> str:
     if value is None:
         return "데이터 부족"
     if value < 30:
-        return "과매도권"
+        return "많이 내려왔어요"
     if value < 40:
-        return "반등 관찰"
+        return "반등을 볼 자리예요"
     if value <= 60:
-        return "중립"
+        return "차분한 편이에요"
     if value <= 70:
-        return "강세"
-    return "과열 주의"
+        return "힘이 있어요"
+    return "조금 뜨거워요"
 
 
 def get_rsi_description(rsi_value: float | None) -> str:
@@ -25,12 +25,12 @@ def get_rsi_description(rsi_value: float | None) -> str:
 
     label = get_rsi_label(rsi_value)
     descriptions = {
-        "데이터 부족": "RSI 데이터가 부족합니다. 가격 데이터가 더 쌓인 뒤 다시 확인하세요.",
-        "과매도권": "주가가 단기적으로 많이 밀린 구간입니다. 반등 가능성도 있지만 추가 하락 위험도 함께 봐야 합니다.",
-        "반등 관찰": "하락 후 회복을 시도할 수 있는 구간입니다. 실제 가격 반등과 거래량을 함께 확인하세요.",
-        "중립": "지금은 과열도 과매도도 아닌 상태입니다. 방향이 확인될 때까지 관찰이 중요합니다.",
-        "강세": "단기 흐름이 강한 편입니다. 다만 과열 구간으로 넘어가는지 확인해야 합니다.",
-        "과열 주의": "단기적으로 많이 오른 상태일 수 있습니다. 추격매수는 조심하는 편이 좋습니다.",
+        "데이터 부족": "가격 데이터가 부족해요. 조금 뒤 다시 확인해 보세요.",
+        "많이 내려왔어요": "많이 내려온 자리예요. 반등할 수도 있지만 더 흔들릴 수도 있어요.",
+        "반등을 볼 자리예요": "조금씩 회복하는지 지켜볼 수 있는 자리예요.",
+        "차분한 편이에요": "아직 너무 많이 오른 상태는 아니에요.",
+        "힘이 있어요": "오르는 힘이 있지만 너무 뜨거워지는지 봐야 해요.",
+        "조금 뜨거워요": "급하게 사기보다는 조심해서 보는 편이 좋아요.",
     }
     return descriptions[label]
 
@@ -43,18 +43,18 @@ def render_rsi_gauge(rsi_value: float | None) -> None:
     description = get_rsi_description(rsi_value)
 
     with st.container(border=True):
-        st.markdown("#### RSI 쉬운 해석")
+        st.markdown("#### 가격 온도")
         if value is None:
             st.warning(description)
             return
-        st.metric("RSI", f"{value:.1f}", help="RSI는 주가가 단기적으로 너무 많이 올랐는지, 많이 내려왔는지 보는 지표입니다.")
+        st.metric("상태", label)
         st.progress(value / 100.0)
         cols = st.columns(5)
-        labels = ["과매도권", "반등 관찰", "중립", "강세", "과열 주의"]
+        labels = ["많이 내려왔어요", "반등을 볼 자리예요", "차분한 편이에요", "힘이 있어요", "조금 뜨거워요"]
         for col, item in zip(cols, labels, strict=True):
             marker = "**" if item == label else ""
             col.caption(f"{marker}{item}{marker}")
-        st.info(f"현재 RSI는 {label} 구간입니다. {description}")
+        st.info(description)
 
 
 def normalize_rsi(rsi_value: float | None) -> float | None:

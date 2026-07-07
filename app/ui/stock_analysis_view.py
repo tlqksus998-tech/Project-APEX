@@ -20,12 +20,9 @@ from modules.utils import format_currency
 
 
 def render_stock_analysis_view(default_query: str = "", beginner_mode: bool = True) -> None:
-    """Render standalone stock detail analysis without requiring portfolio ownership."""
+    """Render developer stock detail analysis without requiring portfolio ownership."""
 
-    section_title("종목 판단 보기", "궁금한 종목을 검색해 APEX 판단과 쉬운 설명을 확인하는 화면입니다.")
-    if beginner_mode:
-        st.info("먼저 종목을 검색해 판단을 확인한 뒤, 실제로 보유 중인 종목만 포트폴리오에 추가하세요.")
-
+    section_title("종목 판단 보기", "개발자 모드에서는 기존 지표와 판단 결과를 자세히 확인합니다.")
     query = st.text_input(
         "종목 검색",
         value=default_query,
@@ -102,10 +99,7 @@ def render_stock_detail(selected: SearchResult, detail: dict[str, object], begin
     render_analysis_checklist(checklist, beginner_mode=beginner_mode)
     render_rsi_gauge(analysis.rsi_14)
 
-    if beginner_mode:
-        with st.expander("자세한 지표 보기", expanded=False):
-            render_advanced_indicators(selected, price, analysis, decision)
-    else:
+    with st.expander("상세 지표 보기", expanded=not beginner_mode):
         render_advanced_indicators(selected, price, analysis, decision)
 
     if not price.success or not detail["ohlcv"].success:
@@ -132,12 +126,10 @@ def render_ai_summary_card(summary: AIJudgementSummary) -> None:
         metric_cols[0].metric("최종 판단", summary.signal)
         metric_cols[1].metric("APEX Score", f"{summary.score:.0f}")
         metric_cols[2].metric("AI Confidence", f"{summary.confidence:.0f}%")
-
         st.markdown("**한 줄 결론**")
         st.write(summary.one_line_conclusion)
         st.markdown("**종합 판단**")
         st.write(summary.detailed_summary)
-
         good_col, caution_col, uncertain_col = st.columns(3)
         with good_col:
             st.markdown("**좋은 점**")
@@ -151,9 +143,6 @@ def render_ai_summary_card(summary: AIJudgementSummary) -> None:
             st.markdown("**불확실한 점**")
             for item in summary.uncertain_points:
                 st.write(f"- {item}")
-
-        st.markdown("**초보자 해석**")
-        st.info(summary.beginner_explanation)
 
 
 def render_action_plan(summary: AIJudgementSummary) -> None:
@@ -176,13 +165,11 @@ def render_advanced_indicators(selected: SearchResult, price: PriceData, analysi
     cols[1].metric("MACD", str(getattr(analysis, "macd_status", "데이터 부족")))
     cols[2].metric("추세", str(getattr(analysis, "trend_status", "데이터 부족")))
     cols[3].metric("52주 위치", format_optional(getattr(analysis, "week52_position", None)))
-
     cols = st.columns(4)
     cols[0].metric("거래통화", selected.trading_currency)
     cols[1].metric("데이터 소스", price.source)
     cols[2].metric("Stock Score", format_optional(getattr(decision, "stock_score", None)))
     cols[3].metric("Risk Score", format_optional(getattr(decision, "risk_score", None)))
-
     with st.expander("Decision Score Breakdown", expanded=False):
         st.write(str(getattr(decision, "advanced_summary", "")))
         warnings = getattr(decision, "warnings", []) or []
@@ -215,13 +202,6 @@ def render_add_to_portfolio_form(selected: SearchResult) -> None:
                     st.caption(f"메모: {memo}")
             else:
                 st.warning(message)
-        st.button(
-            "관찰리스트에 추가",
-            disabled=True,
-            width="stretch",
-            key="detail_watchlist_button",
-            help="관찰리스트 기능은 이후 Sprint에서 연결할 예정입니다.",
-        )
 
 
 def format_optional(value: float | None) -> str:

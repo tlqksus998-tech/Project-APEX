@@ -8,6 +8,8 @@ from modules.portfolio.session_state import (
     KRW_CASH_STATE_KEY,
     LEGACY_PORTFOLIO_STATE_KEY,
     PORTFOLIO_STATE_KEY,
+    APEX_TRACK_STATE_KEY,
+    EASY_MENU_STATE_KEY,
     SELECTED_ANALYSIS_TICKER_STATE_KEY,
     SELECTED_TICKER_STATE_KEY,
     USD_CASH_STATE_KEY,
@@ -37,6 +39,8 @@ def test_initial_portfolio_state_is_empty():
     assert st.session_state[FX_RATE_STATE_KEY] == 1380.0
     assert st.session_state[SELECTED_TICKER_STATE_KEY] is None
     assert st.session_state[SELECTED_ANALYSIS_TICKER_STATE_KEY] is None
+    assert st.session_state[APEX_TRACK_STATE_KEY] == "쉽게 보기"
+    assert st.session_state[EASY_MENU_STATE_KEY] == "종목분석"
 
 
 def test_sample_holdings_are_not_auto_injected():

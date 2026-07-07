@@ -12,6 +12,8 @@ USD_CASH_STATE_KEY = "usd_cash"
 FX_RATE_STATE_KEY = "fx_rate"
 SELECTED_TICKER_STATE_KEY = "selected_ticker"
 SELECTED_ANALYSIS_TICKER_STATE_KEY = "selected_analysis_ticker"
+APEX_TRACK_STATE_KEY = "apex_track"
+EASY_MENU_STATE_KEY = "easy_menu"
 
 
 def empty_portfolio() -> pd.DataFrame:
@@ -29,6 +31,10 @@ def initialize_runtime_defaults() -> None:
     st.session_state.setdefault(FX_RATE_STATE_KEY, 1380.0)
     st.session_state.setdefault(SELECTED_TICKER_STATE_KEY, None)
     st.session_state.setdefault(SELECTED_ANALYSIS_TICKER_STATE_KEY, None)
+    if st.session_state.get(APEX_TRACK_STATE_KEY) not in {"쉽게 보기", "개발자 모드"}:
+        st.session_state[APEX_TRACK_STATE_KEY] = "쉽게 보기"
+    if st.session_state.get(EASY_MENU_STATE_KEY) not in {"종목분석", "AI 랭킹"}:
+        st.session_state[EASY_MENU_STATE_KEY] = "종목분석"
 
 
 def sync_legacy_portfolio_state(portfolio: pd.DataFrame | None) -> None:

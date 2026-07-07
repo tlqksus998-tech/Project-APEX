@@ -21,7 +21,10 @@
     import app.ui.theme_radar_view
     import app.ui.today_dashboard
 
-    assert app.ui.sidebar.MENU_ITEMS == ["내 투자 현황", "종목 판단 보기", "시장 주도주", "테마 레이더", "포트폴리오 관리", "시장 브리핑", "설정"]
+    assert "쉽게 보기 · 종목분석" in app.ui.sidebar.MENU_ITEMS
+    assert "쉽게 보기 · AI 랭킹" in app.ui.sidebar.MENU_ITEMS
+    assert "개발자 모드 · 내 투자 현황" in app.ui.sidebar.MENU_ITEMS
+    assert "개발자 모드 · 포트폴리오 관리" in app.ui.sidebar.MENU_ITEMS
     assert callable(app.ui.portfolio_view.build_search_results)
     assert callable(app.ui.news_view.render_market_issues_placeholder)
     assert callable(app.ui.market_leaders_view.render_market_leaders)

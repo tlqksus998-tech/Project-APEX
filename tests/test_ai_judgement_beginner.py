@@ -40,7 +40,7 @@ def test_ai_judgement_handles_missing_name_and_ticker_safely():
 def test_buy_signal_still_includes_caution_points():
     summary = build_ai_judgement_summary("Apple", "AAPL", {"rsi_14": 55, "trend_status": "상승추세"}, {"final_decision": "BUY"})
 
-    assert any("분할" in item or "비중" in item for item in summary.caution_points)
+    assert any("조금씩" in item or "크게" in item for item in summary.caution_points)
 
 
 def test_reduce_signal_still_includes_good_points():

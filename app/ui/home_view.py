@@ -9,6 +9,7 @@ from app.ui.chart_view import render_macro_mini_charts
 from app.ui.freshness_view import render_freshness_bar, render_freshness_sidebar
 from app.ui.help_text import render_terms_help
 from app.ui.macro_view import render_fear_greed_placeholder, render_macro_market_cards, render_morning_brief
+from app.ui.mascot import render_empty_portfolio_mascot, render_home_mascot, should_show_mascot
 from app.ui.news_view import render_market_issues_placeholder
 from app.ui.onboarding import render_empty_state, render_onboarding
 from app.ui.page_context import PageContext
@@ -76,6 +77,8 @@ def render_home_page(context: PageContext) -> None:
     render_brand_header(freshness)
     render_disclaimer(context.beginner_mode)
     render_freshness_bar(freshness)
+    if should_show_mascot(context.beginner_mode):
+        render_home_mascot(str(scores.get("decision", "HOLD")))
     render_portfolio_ai_summary(portfolio_summary)
     render_action_card(actions)
     render_investment_os_header(portfolio_snapshot)
@@ -110,6 +113,8 @@ def render_empty_home(context: PageContext) -> None:
     render_onboarding(context.user_mode)
     render_freshness_sidebar(context.freshness)
     render_empty_state()
+    if should_show_mascot(context.beginner_mode):
+        render_empty_portfolio_mascot()
     st.info(K_EMPTY_ACTION_GUIDE)
     render_quick_links()
     with st.expander(K_INPUT_TITLE, expanded=True):
