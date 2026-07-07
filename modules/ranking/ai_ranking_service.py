@@ -10,7 +10,7 @@ import pandas as pd
 from modules.ai_judgement import AIJudgementSummary, build_ai_judgement_summary
 from modules.analysis.analysis_engine import TechnicalAnalysisResult, analyze_ohlcv
 from modules.config import get_config
-from modules.data_quality import MarketDataFreshness, assess_market_data_freshness, is_decision_source_allowed
+from modules.data_quality import MarketDataFreshness, TradingReadinessResult, assess_market_data_freshness, build_trading_readiness, is_decision_source_allowed
 from modules.decision.decision_engine import decide_one
 from modules.decision.decision_models import DecisionResult
 from modules.market.market_models import MarketDataRequest, OHLCVDataResult, PriceData
@@ -100,6 +100,14 @@ class UnifiedAIJudgementResult:
     query_timestamp: str = ""
     data_warning_message: str = ""
     is_decision_allowed: bool = True
+    price_label: str = ""
+    market_session: str = "unknown"
+    market_session_label: str = "확인 필요"
+    is_extended_hours: bool = False
+    extended_hours_type: str = ""
+    extended_hours_warning: str = ""
+    final_checklist: list[str] | None = None
+    readiness: TradingReadinessResult | None = None
     price: PriceData | None = None
     ohlcv: OHLCVDataResult | None = None
     analysis: TechnicalAnalysisResult | None = None
@@ -128,14 +136,15 @@ def _get_unified_ai_judgement_cached(name: str, ticker: str, market: str) -> Uni
         freshness = assess_market_data_freshness(ticker, market or price.market, data_dt, query_dt)
 
         source_allowed = is_decision_source_allowed(source, bool(price.success and ohlcv.success))
+        base_readiness = build_trading_readiness(ticker, name, market or price.market, source, bool(price.success and ohlcv.success), freshness)
         if not source_allowed:
-            return unavailable_result(name, ticker, market or price.market, source, price, ohlcv, freshness, "실제 시장 데이터가 아니어서 AI 판단을 제공하지 않습니다.")
+            return unavailable_result(name, ticker, market or price.market, source, price, ohlcv, freshness, "실제 시장 데이터가 아니어서 AI 판단을 제공하지 않습니다.", readiness=base_readiness)
         if freshness.is_stale or freshness.freshness_status in {"unknown", "invalid"}:
-            return unavailable_result(name, ticker, market or price.market, source, price, ohlcv, freshness, freshness.message)
+            return unavailable_result(name, ticker, market or price.market, source, price, ohlcv, freshness, freshness.message, readiness=base_readiness)
 
         analysis = analyze_ohlcv(ticker, ohlcv.data)
         if not analysis.success:
-            return unavailable_result(name, ticker, market or price.market, source, price, ohlcv, freshness, analysis.message, analysis=analysis)
+            return unavailable_result(name, ticker, market or price.market, source, price, ohlcv, freshness, analysis.message, analysis=analysis, readiness=base_readiness)
 
         decision = decide_one(analysis.__dict__)
         decision_dict = decision.__dict__ | {
@@ -144,6 +153,7 @@ def _get_unified_ai_judgement_cached(name: str, ticker: str, market: str) -> Uni
             "stock_signal": decision.stock_signal,
         }
         summary = build_ai_judgement_summary(name, ticker, analysis.__dict__, decision_dict)
+        readiness = build_trading_readiness(ticker, name, market or price.market, source, True, freshness, ai_score=float(decision.final_score))
         return UnifiedAIJudgementResult(
             ticker=ticker,
             name=name,
@@ -162,11 +172,19 @@ def _get_unified_ai_judgement_cached(name: str, ticker: str, market: str) -> Uni
             error_message="",
             data_quality_status="usable",
             freshness_status=freshness.freshness_status,
-            readiness_level=freshness.readiness_level,
+            readiness_level=readiness.readiness_level,
             data_age_minutes=freshness.age_minutes,
             query_timestamp=format_dt(freshness.query_timestamp),
-            data_warning_message=freshness.message,
-            is_decision_allowed=True,
+            data_warning_message=" / ".join(readiness.warning_messages) if readiness.warning_messages else freshness.message,
+            is_decision_allowed=readiness.is_ready_for_reference,
+            price_label=readiness.price_label,
+            market_session=readiness.market_session,
+            market_session_label=readiness.market_session_label,
+            is_extended_hours=readiness.is_extended_hours,
+            extended_hours_type=readiness.extended_hours_type,
+            extended_hours_warning=readiness.extended_hours_warning,
+            final_checklist=readiness.checklist,
+            readiness=readiness,
             price=price,
             ohlcv=ohlcv,
             analysis=analysis,
@@ -196,6 +214,7 @@ def _get_unified_ai_judgement_cached(name: str, ticker: str, market: str) -> Uni
             query_timestamp=updated_at,
             data_warning_message="데이터 조회 실패로 AI 판단을 제한합니다.",
             is_decision_allowed=False,
+            price_label="가격 기준 확인 불가",
         )
 
 
@@ -209,9 +228,11 @@ def unavailable_result(
     freshness: MarketDataFreshness,
     message: str,
     analysis: TechnicalAnalysisResult | None = None,
+    readiness: TradingReadinessResult | None = None,
 ) -> UnifiedAIJudgementResult:
     """Return a safe non-scored result when data quality is insufficient."""
 
+    readiness = readiness or build_trading_readiness(ticker, name, market, source, False, freshness)
     return UnifiedAIJudgementResult(
         ticker=ticker or "UNKNOWN",
         name=name or ticker or "알 수 없는 종목",
@@ -230,11 +251,19 @@ def unavailable_result(
         error_message=message,
         data_quality_status="blocked",
         freshness_status=freshness.freshness_status,
-        readiness_level=freshness.readiness_level,
+        readiness_level=readiness.readiness_level,
         data_age_minutes=freshness.age_minutes,
         query_timestamp=format_dt(freshness.query_timestamp),
-        data_warning_message=message,
+        data_warning_message=message or readiness.final_message,
         is_decision_allowed=False,
+        price_label=readiness.price_label,
+        market_session=readiness.market_session,
+        market_session_label=readiness.market_session_label,
+        is_extended_hours=readiness.is_extended_hours,
+        extended_hours_type=readiness.extended_hours_type,
+        extended_hours_warning=readiness.extended_hours_warning,
+        final_checklist=readiness.checklist,
+        readiness=readiness,
         price=price,
         ohlcv=ohlcv,
         analysis=analysis,
@@ -338,6 +367,11 @@ def result_to_row(result: UnifiedAIJudgementResult) -> dict[str, object]:
         "freshness_status": result.freshness_status,
         "readiness_level": result.readiness_level,
         "data_age_minutes": result.data_age_minutes,
+        "price_label": result.price_label,
+        "market_session": result.market_session,
+        "market_session_label": result.market_session_label,
+        "is_extended_hours": result.is_extended_hours,
+        "extended_hours_warning": result.extended_hours_warning,
         "success": result.success,
         "is_fallback": result.is_fallback,
         "is_decision_allowed": result.is_decision_allowed,
@@ -364,6 +398,11 @@ def ranking_columns() -> list[str]:
         "freshness_status",
         "readiness_level",
         "data_age_minutes",
+        "price_label",
+        "market_session",
+        "market_session_label",
+        "is_extended_hours",
+        "extended_hours_warning",
         "success",
         "is_fallback",
         "is_decision_allowed",

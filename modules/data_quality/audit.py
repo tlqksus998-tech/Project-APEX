@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime
+
+from modules.data_quality.data_quality_models import AuditResult
 
 
 def run_data_quality_audit() -> dict[str, object]:
@@ -28,3 +31,43 @@ def run_data_quality_audit() -> dict[str, object]:
         "findings": findings,
         "passed": not findings,
     }
+
+
+def run_trading_readiness_audit() -> AuditResult:
+    """Run a lightweight audit for trading readiness guard wiring."""
+
+    root = Path(__file__).resolve().parents[2]
+    checked_items = [
+        "fallback/sample/demo source blocking",
+        "shared ranking/detail AI judgement service",
+        "data_timestamp and query_timestamp fields",
+        "US extended-hours session labels",
+        "final trading checklist",
+    ]
+    warnings: list[str] = []
+    failures: list[str] = []
+
+    ranking_path = root / "modules" / "ranking" / "ai_ranking_service.py"
+    detail_path = root / "app" / "ui" / "stock_analysis_view.py"
+    try:
+        ranking_source = ranking_path.read_text(encoding="utf-8")
+        detail_source = detail_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return AuditResult(False, failures=[str(exc)], checked_items=checked_items, created_at=datetime.now())
+
+    required_ranking_tokens = ["build_trading_readiness", "is_decision_allowed", "readiness_level", "price_label"]
+    for token in required_ranking_tokens:
+        if token not in ranking_source:
+            failures.append(f"ranking service missing {token}")
+    if "get_unified_ai_judgement" not in detail_source:
+        failures.append("detail page does not use unified AI judgement service")
+    if "render_final_trading_checklist" not in detail_source:
+        warnings.append("detail page does not render final trading checklist")
+
+    return AuditResult(
+        passed=not failures,
+        warnings=warnings,
+        failures=failures,
+        checked_items=checked_items,
+        created_at=datetime.now(),
+    )

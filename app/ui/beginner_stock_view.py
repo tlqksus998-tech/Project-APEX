@@ -70,6 +70,17 @@ def render_beginner_stock_result(selected: SearchResult, detail: dict[str, objec
     week52 = optional_float(analysis_dict.get("week52_position"))
     rsi = optional_float(analysis_dict.get("rsi_14"))
 
+    if unified is not None:
+        st.caption(
+            f"데이터 기준: {getattr(unified, 'data_timestamp', '확인 불가')} / "
+            f"최근 조회: {getattr(unified, 'query_timestamp', '확인 불가')} / "
+            f"상태: {getattr(unified, 'readiness_level', 'UNKNOWN')} / "
+            f"가격 기준: {getattr(unified, 'price_label', '최근 조회 가격')}"
+        )
+        extended_warning = getattr(unified, "extended_hours_warning", "")
+        if extended_warning:
+            st.warning(str(extended_warning))
+
     with st.container(border=True):
         st.markdown(f"### {selected.name}")
         st.caption(selected.ticker)

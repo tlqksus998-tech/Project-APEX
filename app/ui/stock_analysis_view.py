@@ -100,6 +100,7 @@ def render_stock_detail(selected: SearchResult, detail: dict[str, object], begin
     render_action_plan(summary)
     render_analysis_checklist(checklist, beginner_mode=beginner_mode)
     render_rsi_gauge(analysis.rsi_14)
+    render_final_trading_checklist(unified, beginner_mode=beginner_mode)
 
     with st.expander("상세 지표 보기", expanded=not beginner_mode):
         render_advanced_indicators(selected, price, analysis, decision)
@@ -115,6 +116,8 @@ def render_data_quality_status(unified: object | None) -> None:
         return
     status = getattr(unified, "freshness_status", "unknown")
     readiness = getattr(unified, "readiness_level", "UNKNOWN")
+    session_label = getattr(unified, "market_session_label", "확인 필요")
+    price_label = getattr(unified, "price_label", "최근 조회 가격")
     data_timestamp = getattr(unified, "data_timestamp", "확인 불가")
     query_timestamp = getattr(unified, "query_timestamp", "확인 불가")
     source = getattr(unified, "source", "unknown")
@@ -123,9 +126,32 @@ def render_data_quality_status(unified: object | None) -> None:
     label = "정상" if allowed and readiness == "READY" else ("주의" if allowed else "판단 제한")
     with st.container(border=True):
         st.markdown(f"**데이터 상태: {label}**")
-        st.caption(f"데이터 기준: {data_timestamp} / 최근 조회: {query_timestamp} / 상태: {readiness}({status}) / 출처: {source}")
+        st.caption(f"데이터 기준: {data_timestamp} / 최근 조회: {query_timestamp} / 상태: {readiness}({status}) / 세션: {session_label} / 가격: {price_label} / 출처: {source}")
         if warning:
             st.caption(str(warning))
+        extended_warning = getattr(unified, "extended_hours_warning", "")
+        if extended_warning:
+            st.warning(str(extended_warning))
+
+
+def render_final_trading_checklist(unified: object | None, beginner_mode: bool = True) -> None:
+    """Render a final manual checklist before a user considers trading."""
+
+    if unified is None:
+        return
+    checklist = getattr(unified, "final_checklist", None) or []
+    if not checklist:
+        return
+    title = "매매 전 마지막 확인"
+    if beginner_mode:
+        st.markdown(f"#### {title}")
+        for index, item in enumerate(checklist, start=1):
+            st.checkbox(item, key=f"final_check_{getattr(unified, 'ticker', 'UNKNOWN')}_{index}")
+        st.caption("이 체크리스트는 자동매매 지시가 아니라 최종 확인을 돕기 위한 참고자료입니다.")
+    else:
+        with st.expander(title, expanded=False):
+            for index, item in enumerate(checklist, start=1):
+                st.write(f"{index}. {item}")
 
 
 def render_top_decision_card(selected: SearchResult, price: PriceData, decision: object, summary: AIJudgementSummary) -> None:

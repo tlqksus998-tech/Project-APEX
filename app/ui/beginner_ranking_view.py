@@ -71,6 +71,9 @@ def render_ranking_cards(data: pd.DataFrame, market_label: str, title: str = "")
         source = str(getattr(row, "source", "") or "-")
         freshness_status = str(getattr(row, "freshness_status", "") or "unknown")
         readiness_level = str(getattr(row, "readiness_level", "") or "UNKNOWN")
+        market_session_label = str(getattr(row, "market_session_label", "") or "확인 필요")
+        price_label = str(getattr(row, "price_label", "") or "최근 조회 가격")
+        extended_hours_warning = str(getattr(row, "extended_hours_warning", "") or "")
         is_fallback = bool(getattr(row, "is_fallback", False))
         error_message = str(getattr(row, "error_message", "") or "")
 
@@ -81,9 +84,14 @@ def render_ranking_cards(data: pd.DataFrame, market_label: str, title: str = "")
             col_score.metric("AI 점수", f"{score:.0f}점")
             col_decision.markdown(f"**최종 판단**  \n{easy_label}")
             st.write(f"**한 줄 결론:** {one_line}")
-            st.caption(f"데이터 기준 시간: {data_timestamp} / 최근 조회: {query_timestamp} / 상태: {readiness_level}({freshness_status}) / 출처: {source}")
+            st.caption(
+                f"데이터 기준 시간: {data_timestamp} / 최근 조회: {query_timestamp} / "
+                f"상태: {readiness_level}({freshness_status}) / 세션: {market_session_label} / 가격: {price_label} / 출처: {source}"
+            )
             if readiness_level == "CAUTION":
                 st.caption("주의: 최근 조회 기준 데이터이며, 정규장 실시간 시세가 아닐 수 있습니다.")
+            if extended_hours_warning:
+                st.warning(extended_hours_warning)
             if is_fallback:
                 st.warning(f"일부 데이터는 대체값을 사용했습니다. {error_message}".strip())
 
