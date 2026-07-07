@@ -18,12 +18,13 @@ def render_freshness_bar(snapshot: DataFreshnessSnapshot) -> None:
     """Render compact freshness metrics for market, FX, and analysis data."""
 
     st.caption("데이터 기준 시간")
-    cols = st.columns(5)
+    cols = st.columns(6)
     cols[0].metric("데이터 기준", format_timestamp(snapshot.data_updated_at))
     cols[1].metric("가격 데이터", "최근 조회 완료" if snapshot.price_updated_at else "조회 전")
     cols[2].metric("환율", f"{snapshot.fx_rate:,.1f}원", help=f"{format_timestamp(snapshot.fx_updated_at)} 기준 / {snapshot.fx_source}")
     cols[3].metric("KRX 종목DB", format_timestamp(snapshot.krx_master_updated_at, date_only=True))
-    cols[4].metric("AI 분석", format_analysis_time(snapshot))
+    cols[4].metric("뉴스 데이터", format_timestamp(snapshot.news_updated_at) if snapshot.news_updated_at else "Demo/Fallback")
+    cols[5].metric("AI 분석", format_analysis_time(snapshot))
 
 
 def render_freshness_sidebar(snapshot: DataFreshnessSnapshot) -> None:
@@ -33,6 +34,7 @@ def render_freshness_sidebar(snapshot: DataFreshnessSnapshot) -> None:
     st.sidebar.caption("Data Freshness")
     st.sidebar.caption(f"데이터 기준: {format_timestamp(snapshot.data_updated_at)}")
     st.sidebar.caption(f"환율: {snapshot.fx_rate:,.1f}원 / {format_timestamp(snapshot.fx_updated_at)}")
+    st.sidebar.caption(f"뉴스: {format_timestamp(snapshot.news_updated_at) if snapshot.news_updated_at else 'Demo/Fallback'}")
     st.sidebar.caption(f"KRX 종목DB: {format_timestamp(snapshot.krx_master_updated_at, date_only=True)}")
     st.sidebar.caption(f"AI 분석: {format_analysis_time(snapshot)}")
 

@@ -31,27 +31,40 @@ K_CASH = "\ud604\uae08\ube44\uc911"
 K_CONCENTRATION = "\uc9d1\uc911\ub3c4"
 
 DECISION_DESCRIPTIONS = {
+    "BUY APPROVED": "종목 흐름과 포트폴리오 여건이 비교적 양호합니다. 그래도 분할 접근이 적절합니다.",
     "STRONG_BUY": "\uae30\uc220\uc801 \ud750\ub984\uc740 \uc591\ud638\ud558\uc9c0\ub9cc \uacfc\ub3c4\ud55c \ube44\uc911\ud655\ub300\ubcf4\ub2e4 \ubd84\ud560\ub9e4\uc218 \uad00\uc810\uc73c\ub85c \uc811\uadfc\ud558\uc138\uc694.",
     "BUY": "\uae30\uc220\uc801 \ud750\ub984\uc740 \uc591\ud638\ud558\uc9c0\ub9cc \ubd84\ud560\ub9e4\uc218 \uad00\uc810\uc73c\ub85c \uc811\uadfc\ud558\uc138\uc694.",
+    "WATCH": "관심 후보로 관찰할 만하지만, 바로 매수하기보다 조건을 더 확인하세요.",
+    "WAIT": "종목 신호가 있어도 포트폴리오나 시장 리스크 때문에 지금은 보류가 적절합니다.",
     "HOLD": "\ud604\uc7ac\ub294 \ubcf4\uc720\ub97c \uc720\uc9c0\ud558\ub294 \uac83\uc774 \uc801\uc808\ud569\ub2c8\ub2e4. \ub2e4\ub9cc \ube44\uc911\uc774 \ub192\uac70\ub098 \ud604\uae08\uc774 \ubd80\uc871\ud558\uba74 \ucd94\uac00\ub9e4\uc218\ub294 \ubcf4\ub958\ud558\uc138\uc694.",
     "REDUCE": "\ube44\uc911 \ub610\ub294 \ub9ac\uc2a4\ud06c\uac00 \ub192\uc2b5\ub2c8\ub2e4. \uc77c\ubd80 \ube44\uc911 \ucd95\uc18c\ub97c \uac80\ud1a0\ud558\uc138\uc694.",
     "SELL": "\ud604\uc7ac \ub9ac\uc2a4\ud06c\uac00 \ub192\uc2b5\ub2c8\ub2e4. \uc190\uc2e4 \ud655\ub300 \ubc29\uc9c0\ub97c \uc6b0\uc120 \uac80\ud1a0\ud558\uc138\uc694.",
+    "DO NOT BUY": "신규매수는 피하고 리스크 관리가 우선입니다.",
 }
 
 DECISION_COLORS = {
+    "BUY APPROVED": "background-color: #dcfce7; color: #166534; font-weight: 700;",
+    "STRONG BUY": "background-color: #dcfce7; color: #166534; font-weight: 700;",
     "STRONG_BUY": "background-color: #dcfce7; color: #166534; font-weight: 700;",
     "BUY": "background-color: #dcfce7; color: #166534; font-weight: 700;",
+    "WATCH": "background-color: #dbeafe; color: #1d4ed8; font-weight: 700;",
+    "WAIT": "background-color: #fef3c7; color: #92400e; font-weight: 700;",
     "HOLD": "background-color: #fef3c7; color: #92400e; font-weight: 700;",
     "REDUCE": "background-color: #ffedd5; color: #9a3412; font-weight: 700;",
     "SELL": "background-color: #fee2e2; color: #991b1b; font-weight: 700;",
+    "DO NOT BUY": "background-color: #fee2e2; color: #991b1b; font-weight: 700;",
 }
 
 DECISION_CARD_STYLES = {
+    "BUY APPROVED": ("#dcfce7", "#166534"),
     "STRONG_BUY": ("#dcfce7", "#166534"),
     "BUY": ("#dcfce7", "#166534"),
+    "WATCH": ("#dbeafe", "#1d4ed8"),
+    "WAIT": ("#fef3c7", "#92400e"),
     "HOLD": ("#fef3c7", "#92400e"),
     "REDUCE": ("#ffedd5", "#9a3412"),
     "SELL": ("#fee2e2", "#991b1b"),
+    "DO NOT BUY": ("#fee2e2", "#991b1b"),
 }
 
 
@@ -174,7 +187,11 @@ def build_dashboard_table(positions: pd.DataFrame, analysis_results: pd.DataFram
         risk["risk"] = risk["total_risk_penalty"].map(lambda value: "High" if value <= -30 else "Medium" if value < 0 else "Low")
         table = table.merge(risk[["ticker", "risk"]], on="ticker", how="left")
     if not decision_results.empty:
-        table = table.merge(decision_results[["ticker", "final_score", "decision"]], on="ticker", how="left")
+        decision_columns = ["ticker", "final_score", "decision"]
+        for optional in ["stock_signal", "final_decision"]:
+            if optional in decision_results.columns:
+                decision_columns.append(optional)
+        table = table.merge(decision_results[decision_columns], on="ticker", how="left")
 
     return table.rename(
         columns={
@@ -189,6 +206,8 @@ def build_dashboard_table(positions: pd.DataFrame, analysis_results: pd.DataFram
             "risk": "Risk",
             "final_score": "Final Score",
             "decision": "Decision",
+            "stock_signal": "Stock Signal",
+            "final_decision": "Final Decision",
         }
     )
 
@@ -203,7 +222,7 @@ def render_dashboard_table(table: pd.DataFrame, beginner_mode: bool = True) -> N
 
     display = table.copy()
     if beginner_mode:
-        keep_columns = [K_NAME, K_TICKER, K_PRICE, K_RETURN, "Trend", "Risk", "Final Score", "Decision"]
+        keep_columns = [K_NAME, K_TICKER, K_PRICE, K_RETURN, "Trend", "Risk", "Final Score", "Final Decision"]
         display = display[[column for column in keep_columns if column in display.columns]]
     for column in [K_PRICE, "RSI", "MACD", "52W Position", "Final Score"]:
         if column in display.columns:
@@ -213,7 +232,8 @@ def render_dashboard_table(table: pd.DataFrame, beginner_mode: bool = True) -> N
         numeric_return = pd.to_numeric(display[K_RETURN], errors="coerce")
         display[K_RETURN] = numeric_return.map(lambda value: format_percent(float(value)) if pd.notna(value) else None)
 
-    styled = display.style.map(color_decision_cell, subset=["Decision"])
+    decision_subset = [column for column in ["Decision", "Final Decision", "Stock Signal"] if column in display.columns]
+    styled = display.style.map(color_decision_cell, subset=decision_subset)
     st.dataframe(styled, width="stretch", hide_index=True)
 
 

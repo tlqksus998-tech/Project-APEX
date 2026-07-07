@@ -3,12 +3,12 @@
 import streamlit as st
 
 from modules.config.version import APP_NAME, APP_VERSION, BUILD_DATE, BUILD_NAME
-from modules.market.fx_provider import get_usdkrw_rate
+from modules.data_providers.fx_provider import get_usdkrw_rate
 from modules.portfolio_engine import CashPosition
 from modules.market.master_search import refresh_krx_master_database, refresh_master_database
 
 
-MENU_ITEMS = ["Home", "Portfolio", "Market", "Analysis", "Decision", "Settings"]
+MENU_ITEMS = ["내 투자 현황", "종목 판단 보기", "시장 주도주", "테마 레이더", "포트폴리오 관리", "시장 브리핑", "설정"]
 K_BEGINNER = "\ucd08\ubcf4\uc790 \ubaa8\ub4dc"
 K_ADVANCED = "\uace0\uae09\uc790 \ubaa8\ub4dc"
 K_REFRESH = "\uc2dc\uc7a5 \ub370\uc774\ud130 \uac31\uc2e0"
@@ -20,7 +20,11 @@ def render_sidebar() -> str:
 
     st.sidebar.title("Project APEX")
     st.sidebar.caption("AI Portfolio Expert")
-    return st.sidebar.radio("Menu", MENU_ITEMS, index=0)
+    selected = st.session_state.get("selected_menu", MENU_ITEMS[0])
+    index = MENU_ITEMS.index(selected) if selected in MENU_ITEMS else 0
+    selected_menu = st.sidebar.radio("Menu", MENU_ITEMS, index=index, key="main_menu")
+    st.session_state["selected_menu"] = selected_menu
+    return selected_menu
 
 
 def render_user_mode() -> str:
@@ -78,7 +82,7 @@ def render_cash_inputs() -> CashPosition:
         if result.success:
             st.sidebar.success(f"환율: {result.rate:,.1f}원")
         else:
-            st.sidebar.warning(result.message)
+            st.sidebar.warning(result.error_message)
     usdkrw = float(st.sidebar.number_input("USD/KRW", min_value=0.0, value=float(st.session_state.get("fx_rate", 1380.0)), step=10.0))
     st.session_state["fx_rate"] = usdkrw
     return CashPosition(krw_cash=krw_cash, usd_cash=usd_cash, usdkrw=usdkrw)

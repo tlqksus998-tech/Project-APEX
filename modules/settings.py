@@ -5,6 +5,14 @@ APP_SETTINGS: dict[str, object] = {
     "enable_paid_plan_limit": False,
     "cash_warning_ratio": 20,
     "single_position_warning_ratio": 30,
+    "default_fx_rate": 1380,
+    "cache_ttl": {
+        "fx": 600,
+        "market_index": 600,
+        "market_leaders": 1800,
+        "theme_news": 3600,
+        "master_db": 86400,
+    },
 }
 
 
